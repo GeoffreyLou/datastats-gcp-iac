@@ -1,0 +1,1 @@
+# TODO : pour le SA Cloud Run qui doit agir sur Cloud SQL, il faut ajouter "roles/cloudsql.client"

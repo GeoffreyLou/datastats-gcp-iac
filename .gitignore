@@ -1,0 +1,18 @@
+# VScode
+.vscode
+
+# Local
+*.csv
+*.json
+deploy.sh
+local/
+*/local/
+.env 
+*/.env
+
+# Terraform 
+.terraform 
+.terraform.*
+terraform.*
+backend.tf
+terraform.tfvars

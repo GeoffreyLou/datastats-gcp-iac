@@ -1,0 +1,85 @@
+name: Terraform apply
+
+on:
+  pull_request:
+    branches:
+      - main
+    types:
+      - closed
+
+jobs:
+  terraform_apply:
+    if: github.event.pull_request.merged == true
+    name: Terraform apply
+
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: read
+      id-token: write
+
+    env:
+      TERRAFORM_VERSION: 1.10.0
+      ENVIRONMENT: prod
+      GCP_REGION: europe-west9
+      GCP_PROJECT_ID:  ${{ secrets.GCP_PROJECT_ID }}
+      GCP_CI_CD_SERVICE_ACCOUNT: ${{ secrets.GCP_CI_CD_SERVICE_ACCOUNT }}
+      GCP_WORKLOAD_IDENTITY_PROVIDER: ${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+      GCP_BACKEND_SECRET : ${{ secrets.GCP_BACKEND_SECRET }}
+      GCP_TFVARS_SECRET : ${{ secrets.GCP_TFVARS_SECRET }}
+
+    steps:
+      - name: Checkout
+        id: checkout
+        uses: actions/checkout@v4
+
+      - name: Auth to GCP
+        id: get_gcp_access_token
+        uses: 'google-github-actions/auth@v2'
+        with:
+          token_format: 'access_token'
+          workload_identity_provider: ${{ env.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ${{ env.GCP_CI_CD_SERVICE_ACCOUNT }}
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: ${{ env.TERRAFORM_VERSION }}
+
+      - name: Set up Cloud SDK
+        id: setup_gcloud
+        uses: google-github-actions/setup-gcloud@master
+        with:
+          project_id: ${{ env.GCP_PROJECT_ID }}
+          service_account_key: ${{ env.GCP_SA_KEY }}
+          export_default_credentials: true
+
+      - name: Get backend secret
+        id: get_backend_secret
+        uses: 'google-github-actions/get-secretmanager-secrets@v2'
+        with:
+          secrets: |-
+            backend_secret: ${{ secrets.GCP_BACKEND_SECRET }}
+            
+      - name: Create backend file
+        run: echo "${{ steps.get_backend_secret.outputs.backend_secret }}" > environments/${{ env.ENVIRONMENT }}/backend.tf
+
+      - name: Get tfvars secret
+        id: get_tfvars_secret
+        uses: 'google-github-actions/get-secretmanager-secrets@v2'
+        with:
+          secrets: |-
+            tfvars_secret: ${{ secrets.GCP_TFVARS_SECRET }}
+            
+      - name: Create backend file
+        run: echo "${{ steps.get_tfvars_secret.outputs.tfvars_secret }}" > environments/${{ env.ENVIRONMENT }}/terraform.tfvars
+
+      - name: Terraform init
+        id: terraform_init
+        working-directory: ./environments/${{ env.ENVIRONMENT }}
+        run: terraform init
+
+      - name: Terraform apply
+        id: terraform_apply
+        working-directory: ./environments/${{ env.ENVIRONMENT }}
+        run: terraform apply -auto-approve
