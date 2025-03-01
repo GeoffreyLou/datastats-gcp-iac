@@ -31,19 +31,19 @@ module "run_job_urls_scrapper" {
   region                = var.region
   job_name              = var.run_job_urls_scrapper_name
   deletion_protection   = false
-
-  sa_roles = [
+  
+  sa_roles              = [
     "roles/cloudsql.client",
     "roles/secretmanager.secretAccessor",
   ]
 
-  env_vars = [ 
+  env_vars              = [ 
     { name  = "URL_TO_SCRAP",           value = var.url_to_scrap },
     { name  = "DATASTATS_BUCKET_UTILS", value = module.utils_bucket.name },
     { name  = "DATASTATS_BUCKET_URLS",  value = module.urls_bucket.name },
   ]
 
-   secret_env_vars = [ 
+   secret_env_vars      = [ 
     { name  = "DB_ROOT_CERT", secret_name = google_secret_manager_secret.ssl_cert.id },
     { name  = "DB_CERT",      secret_name = google_secret_manager_secret.ssl_server_ca_cert.id },
     { name  = "DB_KEY",       secret_name = google_secret_manager_secret.ssl_private_key.id },
