@@ -27,6 +27,26 @@ variable "cloud_sql_version" {
   type        = string
 }
 
+variable "run_job_urls_scrapper_name" {
+  description = "The name of the Cloud Run Job Urls Scrapper"
+  type        = string
+}
+
+variable "url_to_scrap" {
+  description = "The url that will be used for Urls Scrapper Cloud Run Job"
+  type        = string  
+}
+
+variable "utils_bucket_name" {
+  description = "The name of the Bucket used for utils files"
+  type        = string
+}
+
+variable "urls_bucket_name" {
+  description = "The name of the Bucket used to store urls files"
+  type        = string
+}
+
 # -----------------------------------------------------------------------------
 # 🟢 Optional parameters
 # -----------------------------------------------------------------------------
@@ -35,9 +55,6 @@ variable "apis_to_enable" {
   description = "The complete APIs list to enable in the project"
   type        = list(string)
   default     = [
-    "iam.googleapis.com",
-    "artifactregistry.googleapis.com",
-    "run.googleapis.com",
     "compute.googleapis.com",
     "secretmanager.googleapis.com",
     "servicenetworking.googleapis.com",

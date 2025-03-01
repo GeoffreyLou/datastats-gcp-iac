@@ -9,7 +9,8 @@ on:
 
 jobs:
   terraform_apply:
-    if: github.event.pull_request.merged == true
+    if: false
+    # if: github.event.pull_request.merged == true
     name: Terraform apply
 
     runs-on: ubuntu-latest
