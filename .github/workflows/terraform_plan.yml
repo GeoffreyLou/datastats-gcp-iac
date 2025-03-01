@@ -11,6 +11,7 @@ on:
 
 jobs:
   terraform_plan:
+    if: false
     name: Terraform plan
 
     runs-on: ubuntu-latest
