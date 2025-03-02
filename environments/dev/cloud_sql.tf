@@ -23,6 +23,8 @@
   - sqladmin.googleapis.com
   - secretmanager.googleapis.com
   - servicenetworking.googleapis.com
+
+  TODO : update connectivity with PSC
 */
 
 # ----------------------------------------------------------------------------------------------------------------------
@@ -58,7 +60,7 @@ resource "google_secret_manager_secret_version" "root_password_version" {
 
 
 # ----------------------------------------------------------------------------------------------------------------------
-# 🟢 BDD password
+# 🟢 BDD User password
 # ----------------------------------------------------------------------------------------------------------------------
 
 resource "random_password" "user_password" {
@@ -116,12 +118,8 @@ resource "google_sql_database_instance" "datastats_sql" {
     ip_configuration {
       ipv4_enabled                                  = false
       enable_private_path_for_google_cloud_services = true
+      private_network                               = google_compute_network.datastats_network.self_link
       ssl_mode                                      = "TRUSTED_CLIENT_CERTIFICATE_REQUIRED"
-
-      psc_config {
-        psc_enabled               = true
-        allowed_consumer_projects = [ var.project_id ]
-      }
     }
   }
 }
@@ -220,5 +218,3 @@ resource "google_secret_manager_secret_version" "ssl_cert_version" {
   secret      = google_secret_manager_secret.ssl_cert.id
   secret_data = google_sql_ssl_cert.datastats_client_cert.cert
 }
-
-# Connexion : https://cloud.google.com/sql/docs/postgres/connect-run?hl=fr#private-ip_1

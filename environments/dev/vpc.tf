@@ -1,4 +1,12 @@
 # ----------------------------------------------------------------------------------------------------------------------
+# 🟢 Context
+# ----------------------------------------------------------------------------------------------------------------------
+
+/*
+  TODO: remove and replace creation / deletion of google_vpc_access_connector in workflows to avoid costs
+*/
+
+# ----------------------------------------------------------------------------------------------------------------------
 # 🟢 Network & subnetwork
 # ----------------------------------------------------------------------------------------------------------------------
 
@@ -22,13 +30,14 @@ resource "google_compute_subnetwork" "datastats_subnetwork" {
 # 🟢 Cloud SQL Private IP
 # ----------------------------------------------------------------------------------------------------------------------
 
-resource "google_compute_global_address" "cloudsql_private_ip" {
+resource "google_compute_global_address" "peering_ip" {
   project       = var.project_id
-  name          = "${var.project_name}-cloudsql-psc-address"
+  name          = "${var.project_name}-peering-ip"
   prefix_length = 16
   address_type  = "INTERNAL"
   purpose       = "VPC_PEERING"
   network       = google_compute_network.datastats_network.id
+  labels        = { env = var.env }
 } 
 
 
@@ -39,15 +48,13 @@ resource "google_compute_global_address" "cloudsql_private_ip" {
 resource "google_service_networking_connection" "private_vpc_connection" {
   network                 = google_compute_network.datastats_network.id
   service                 = "servicenetworking.googleapis.com"
-  reserved_peering_ranges = [google_compute_global_address.cloudsql_private_ip.name]
+  reserved_peering_ranges = [google_compute_global_address.peering_ip.name]
 }
 
 
 # ----------------------------------------------------------------------------------------------------------------------
 # 🟢 Serverless VPC connector
 # ----------------------------------------------------------------------------------------------------------------------
-
-# TODO: remove and replace creation / deletion in workflows to avoid costs
 
 resource "google_vpc_access_connector" "serverless_connector" {
   name          = "${var.project_name}-connector"
