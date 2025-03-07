@@ -3,7 +3,6 @@
 # ----------------------------------------------------------------------------------------------------------------------
 
 /*
-
   Documentation used to create connexion between Cloud Run and Cloud SQL with private IP:
   - https://cloud.google.com/sql/docs/postgres/connect-instance-cloud-run?hl=fr#gcloud_4
 
@@ -132,11 +131,12 @@ resource "google_sql_database" "datastats_bdd" {
 }
 
 resource "google_sql_user" "datastats_user" {
+  depends_on = [ google_sql_database.datastats_bdd ]
+
   project  = var.project_id
   name     = "${var.project_name}-user"
   instance = google_sql_database_instance.datastats_sql.name
   password = random_password.user_password.result
-  
 }
 
 

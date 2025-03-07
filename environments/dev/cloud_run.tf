@@ -47,7 +47,7 @@ module "run_job_urls_scrapper" {
     { name  = "DB_NAME",                  value = google_sql_database.datastats_bdd.name },
     { name  = "DB_USER",                  value = google_sql_user.datastats_user.name },
     { name  = "DB_PORT",                  value = "5432" },
-    { name  = "INSTANCE_HOST",            value = google_sql_database_instance.datastats_sql.ip_address[0].ip_address },
+    { name  = "DB_HOST",            value = google_sql_database_instance.datastats_sql.ip_address[0].ip_address },
   ]
 
    secret_env_vars                   = [ 
