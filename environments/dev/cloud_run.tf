@@ -38,7 +38,11 @@ module "run_job_urls_scrapper" {
   connector_id                       = google_vpc_access_connector.serverless_connector.id
   cloud_sql_instance_connection_name = [ google_sql_database_instance.datastats_sql.connection_name ]
   deletion_protection                = false
-  sa_roles                           = [ "roles/cloudsql.client", "roles/secretmanager.secretAccessor" ]
+  sa_roles                           = [ 
+    "roles/cloudsql.client", 
+    "roles/secretmanager.secretAccessor",
+    "roles/storage.objectUser"
+  ]
 
   env_vars                           = [ 
     { name  = "URL_TO_SCRAP",             value = var.url_to_scrap },
