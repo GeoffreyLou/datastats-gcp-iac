@@ -1,0 +1,100 @@
+    main:
+      steps:
+        - create_router:
+            call: http.post
+            args:
+              url: "https://compute.googleapis.com/compute/v1/projects/${var.project_id}/regions/${var.region}/routers"
+              auth:
+                type: OAuth2
+              body:
+                bgp:
+                  advertiseMode: "DEFAULT"
+                description: "Router for Nat x Datastats Cloud Runs"
+                encryptedInterconnectRouter: true
+                kind: "compute#router"
+                name: ${var.project_name}-router
+                network: ${google_compute_network.datastats_network.self_link}
+                region: projects/${var.project_id}/regions/${var.region}
+            next: wait_for_router
+
+        - wait_for_router:
+            call: sys.sleep
+            args:
+              seconds: 30
+            next: create_nat
+
+        - create_nat:
+            call: gcloud
+            args:
+              args: "compute routers nats create ${var.project_name}-nat --router=${var.project_name}-router --region=${var.region} --auto-allocate-nat-external-ips --nat-all-subnet-ip-ranges"
+            next: create_vpc_connector
+
+        - create_vpc_connector:
+            call: http.post
+            args:
+              url: "https://vpcaccess.googleapis.com/v1/projects/${var.project_id}/locations/${var.region}/connectors?connectorId=${var.serverless_connector_name}"
+              auth:
+                type: OAuth2
+              body:
+                network: ${google_compute_network.datastats_network.name}
+                ipCidrRange: "10.10.0.0/28"
+                minInstances: 2
+                maxInstances: 10
+                machineType: e2-micro
+
+    gcloud:
+      params: [args]
+      steps:
+      - create_build:
+          call: googleapis.cloudbuild.v1.projects.builds.create
+          args:
+            projectId: ${var.project_id}
+            parent: projects/${var.project_id}/locations/global
+            body:
+              serviceAccount: $${sys.get_env("GOOGLE_CLOUD_SERVICE_ACCOUNT_NAME")}
+              options:
+                logging: CLOUD_LOGGING_ONLY
+              steps:
+              - name: gcr.io/google.com/cloudsdktool/cloud-sdk
+                entrypoint: /bin/bash
+                args: $${["-c", "gcloud " + args + " > $$BUILDER_OUTPUT/output"]}
+          result: result_builds_create
+      - return_build_result:
+          return: $${text.split(text.decode(base64.decode(result_builds_create.metadata.build.results.buildStepOutputs[0])), "\n")}
+
+# Next steps to add / change : 
+
+    - getJSONFromBucket:
+        call: http.get
+        args:
+          url: "https://storage.googleapis.com/storage/v1/b/{{bucketName}}/o/{{fileName}}"
+          auth:
+            type: OAuth2
+        result: jsonContent
+
+    - parseJSON:
+        assign:
+          - jobsList: ${jsonContent.body.jobs_to_scrap}
+
+    - iterateJobs:
+        for: job in ${jobsList}
+        steps:
+          - triggerCloudRunJobWithEnv:
+              call: http.post
+              args:
+                url: "https://run.googleapis.com/v1/projects/{{projectID}}/locations/{{region}}/jobs/{{jobName}}:run"
+                auth:
+                  type: OAuth2
+                body:
+                  envVars:
+                    WORD: ${job}
+              result: jobRunResult
+
+    - deleteVPCConnector:
+        call: http.delete
+        args:
+          url: "https://vpcaccess.googleapis.com/v1/projects/{{projectID}}/locations/{{region}}/connectors/{{connectorName}}"
+          auth:
+            type: OAuth2
+        next: end
+

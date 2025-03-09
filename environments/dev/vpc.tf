@@ -57,7 +57,9 @@ resource "google_service_networking_connection" "private_vpc_connection" {
 # 🟢 Serverless VPC connector
 # ----------------------------------------------------------------------------------------------------------------------
 
-resource "google_vpc_access_connector" "serverless_connector" {
+# TODO : delete because of costs, created and deleted in cloud workflows
+
+/* resource "google_vpc_access_connector" "serverless_connector" {
   name          = "${var.project_name}-connector"
   project       = var.project_id
   region        = var.region
@@ -66,14 +68,16 @@ resource "google_vpc_access_connector" "serverless_connector" {
   machine_type  = "e2-micro"
   min_instances = 2
   max_instances = 3
-}
+} */
 
 
 # ----------------------------------------------------------------------------------------------------------------------
-# 🟢 Serverless VPC connector
+# 🟢 Cloud Router & Nat
 # ----------------------------------------------------------------------------------------------------------------------
 
-resource "google_compute_router" "datastats_router" {
+# TODO : delete because of costs, created and deleted in cloud workflows
+
+/* resource "google_compute_router" "datastats_router" {
   name    = "${var.project_name}-router"
   project = var.project_id
   region  = var.region
@@ -88,3 +92,4 @@ resource "google_compute_router_nat" "datastats_nat" {
   nat_ip_allocate_option             = "AUTO_ONLY"
   source_subnetwork_ip_ranges_to_nat = "ALL_SUBNETWORKS_ALL_IP_RANGES"
 }
+ */

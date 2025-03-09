@@ -47,6 +47,17 @@ variable "urls_bucket_name" {
   type        = string
 }
 
+variable "serverless_connector_name" {
+  description = "The name of the VPC Access Connector for Serverless"
+  type        = string
+}
+
+variable "urls_scrapper_workflow_name" {
+  description = "The name of the Cloud Workflows for Urls Scrapper"
+  type        = string
+  
+}
+
 # -----------------------------------------------------------------------------
 # 🟢 Optional parameters
 # -----------------------------------------------------------------------------
@@ -59,6 +70,8 @@ variable "apis_to_enable" {
     "secretmanager.googleapis.com",
     "servicenetworking.googleapis.com",
     "sqladmin.googleapis.com",
-    "vpcaccess.googleapis.com"
+    "vpcaccess.googleapis.com",
+    "workflows.googleapis.com",
+    "cloudbuild.googleapis.com"
   ]
 }
