@@ -130,8 +130,23 @@ resource "google_sql_database" "datastats_bdd" {
   charset  = "utf8"
 }
 
+# Ensure destroy order
+resource "null_resource" "destroy_order" {
+  depends_on = [
+    google_sql_database.datastats_bdd
+  ]
+
+  triggers = {
+    always_run = "${timestamp()}"
+  }
+
+  provisioner "local-exec" {
+    command = "echo 'Ensuring destroy order: database before user'"
+  }
+}
+
 resource "google_sql_user" "datastats_user" {
-  depends_on = [ google_sql_database.datastats_bdd ]
+  depends_on = [ null_resource.destroy_order ]
 
   project  = var.project_id
   name     = "${var.project_name}-user"

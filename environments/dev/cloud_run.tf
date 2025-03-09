@@ -35,7 +35,7 @@ module "run_job_urls_scrapper" {
   env                                = var.env
   region                             = var.region
   job_name                           = var.run_job_urls_scrapper_name
-  connector_id                       = google_vpc_access_connector.serverless_connector.id
+  # connector_id                       = google_vpc_access_connector.serverless_connector.id
   cloud_sql_instance_connection_name = [ google_sql_database_instance.datastats_sql.connection_name ]
   deletion_protection                = false
   sa_roles                           = [ 
