@@ -58,6 +58,17 @@ variable "urls_scrapper_workflow_name" {
   
 }
 
+variable "router_name" {
+  description = "The name of the Cloud Router"
+  type        = string
+  
+}
+
+variable "nat_name" {
+  description = "The name of the Cloud NAT"
+  type        = string
+}
+
 # -----------------------------------------------------------------------------
 # 🟢 Optional parameters
 # -----------------------------------------------------------------------------

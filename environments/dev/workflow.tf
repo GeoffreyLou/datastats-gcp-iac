@@ -1,3 +1,21 @@
+# ----------------------------------------------------------------------------------------------------------------------
+# 🟢 Context
+# ----------------------------------------------------------------------------------------------------------------------
+
+/*
+  The workflow is used to avoid costs :
+  - Cloud Composer is too expensive for this use case
+  - Cloud NAT generate costs because Cloud Run Job lose internet access when connected to a Serverless VPC Connector
+  - Serverless VPC Connector is expensive for this use case
+
+  The workflow is used to create and delete resources for Cloud Run and trigger the Urls Scrapper Cloud Run Job
+
+  TODO : change gcloud commands to use http requests to generate more executions in free tier.
+*/
+
+# ----------------------------------------------------------------------------------------------------------------------
+# 🟢 Service account and roles
+# ----------------------------------------------------------------------------------------------------------------------
 
 resource "google_service_account" "workflow_sa" {
   project      = var.project_id
@@ -11,7 +29,9 @@ resource "google_project_iam_member" "workflow_sa_roles" {
     "roles/vpcaccess.viewer",
     "roles/compute.networkAdmin",
     "roles/cloudbuild.builds.editor",
-    "roles/iam.serviceAccountUser"
+    "roles/iam.serviceAccountUser",
+    "roles/logging.logWriter",
+    "roles/run.developer"
   ])
   project  = var.project_id
   role     = each.value
@@ -39,68 +59,102 @@ resource "google_workflows_workflow" "urls_scrapper_workflow" {
   }
 
   source_contents = <<EOF
-    main:
-      steps:
-        - create_router:
-            call: http.post
-            args:
-              url: "https://compute.googleapis.com/compute/v1/projects/${var.project_id}/regions/${var.region}/routers"
-              auth:
-                type: OAuth2
-              body:
-                bgp:
-                  advertiseMode: "DEFAULT"
-                description: "Router for Nat x Datastats Cloud Runs"
-                encryptedInterconnectRouter: true
-                kind: "compute#router"
-                name: ${var.project_name}-router
-                network: ${google_compute_network.datastats_network.self_link}
-                region: projects/${var.project_id}/regions/${var.region}
-            next: wait_for_router
+main:
+  steps:
+    - create_router:
+        call: http.post
+        args:
+          url: "https://compute.googleapis.com/compute/v1/projects/${var.project_id}/regions/${var.region}/routers"
+          auth:
+            type: OAuth2
+          body:
+            bgp:
+              advertiseMode: "DEFAULT"
+            description: "Router for Nat x Datastats Cloud Runs"
+            encryptedInterconnectRouter: true
+            kind: "compute#router"
+            name: ${var.router_name}
+            network: ${google_compute_network.datastats_network.self_link}
+            region: projects/${var.project_id}/regions/${var.region}
+        next: wait_for_router
 
-        - wait_for_router:
-            call: sys.sleep
-            args:
-              seconds: 30
-            next: create_nat
+    - wait_for_router:
+        call: sys.sleep
+        args:
+          seconds: 30
+        next: create_nat
 
-        - create_nat:
-            call: gcloud
-            args:
-              args: "compute routers nats create ${var.project_name}-nat --router=${var.project_name}-router --region=${var.region} --auto-allocate-nat-external-ips --nat-all-subnet-ip-ranges"
-            next: create_vpc_connector
+    - create_nat:
+        call: gcloud
+        args:
+          args: "compute routers nats create ${var.nat_name} --router=${var.project_name}-router --region=${var.region} --auto-allocate-nat-external-ips --nat-all-subnet-ip-ranges"
+        next: create_vpc_connector
 
-        - create_vpc_connector:
-            call: http.post
-            args:
-              url: "https://vpcaccess.googleapis.com/v1/projects/${var.project_id}/locations/${var.region}/connectors?connectorId=${var.serverless_connector_name}"
-              auth:
-                type: OAuth2
-              body:
-                network: ${google_compute_network.datastats_network.name}
-                ipCidrRange: "10.10.0.0/28"
-                minInstances: 2
-                maxInstances: 10
-                machineType: e2-micro
+    - create_vpc_connector:
+        call: http.post
+        args:
+          url: "https://vpcaccess.googleapis.com/v1/projects/${var.project_id}/locations/${var.region}/connectors?connectorId=${var.serverless_connector_name}"
+          auth:
+            type: OAuth2
+          body:
+            network: ${google_compute_network.datastats_network.name}
+            ipCidrRange: "10.10.0.0/28"
+            minInstances: 2
+            maxInstances: 3
+            machineType: e2-micro
 
-    gcloud:
-      params: [args]
-      steps:
-      - create_build:
-          call: googleapis.cloudbuild.v1.projects.builds.create
-          args:
-            projectId: ${var.project_id}
-            parent: projects/${var.project_id}/locations/global
-            body:
-              serviceAccount: $${sys.get_env("GOOGLE_CLOUD_SERVICE_ACCOUNT_NAME")}
-              options:
-                logging: CLOUD_LOGGING_ONLY
-              steps:
-              - name: gcr.io/google.com/cloudsdktool/cloud-sdk
-                entrypoint: /bin/bash
-                args: $${["-c", "gcloud " + args + " > $$BUILDER_OUTPUT/output"]}
-          result: result_builds_create
-      - return_build_result:
-          return: $${text.split(text.decode(base64.decode(result_builds_create.metadata.build.results.buildStepOutputs[0])), "\n")}
+    - update_cloud_run_job:
+        call: gcloud
+        args:
+          args: "run jobs update ${module.run_job_urls_scrapper.cloud_run_job_name} --region=${var.region} --vpc-connector=${var.serverless_connector_name}"
+
+    - wait_before_cleanup:
+        call: sys.sleep
+        args:
+          seconds: 180
+        next: remove_vpc_connector_from_cloud_run_job
+
+    - remove_vpc_connector_from_cloud_run_job:
+        call: gcloud
+        args:
+          args: "run jobs update ${module.run_job_urls_scrapper.cloud_run_job_name} --region=${var.region} --clear-vpc-connector"
+        next: delete_nat
+
+    - delete_nat:
+        call: gcloud
+        args:
+          args: "compute routers nats delete ${var.nat_name} --router=${var.router_name} --region=${var.region}"
+        next: delete_router
+
+    - delete_router:
+        call: gcloud
+        args:
+          args: "compute routers delete ${var.router_name} --region=${var.region}"
+        next: delete_vpc_connector
+
+    - delete_vpc_connector:
+        call: gcloud
+        args:
+          args: "compute networks vpc-access connectors delete ${var.serverless_connector_name} --region=${var.region} --quiet"
+
+gcloud:
+  params: [args]
+  steps:
+  - create_build:
+      call: googleapis.cloudbuild.v1.projects.builds.create
+      args:
+        projectId: ${var.project_id}
+        parent: projects/${var.project_id}/locations/global
+        body:
+          serviceAccount: $${sys.get_env("GOOGLE_CLOUD_SERVICE_ACCOUNT_NAME")}
+          options:
+            logging: CLOUD_LOGGING_ONLY
+          steps:
+          - name: gcr.io/google.com/cloudsdktool/cloud-sdk
+            entrypoint: /bin/bash
+            args: $${["-c", "gcloud " + args + " > $$BUILDER_OUTPUT/output"]}
+      result: result_builds_create
+  - return_build_result:
+      return: $${text.split(text.decode(base64.decode(result_builds_create.metadata.build.results.buildStepOutputs[0])), "\n")}
     EOF
 }

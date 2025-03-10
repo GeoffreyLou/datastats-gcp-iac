@@ -149,10 +149,11 @@ resource "google_cloud_run_v2_job" "main" {
         }
       }
 
-      vpc_access {
+    /*       vpc_access {
         connector = var.connector_id
         egress    = var.connector_id != null ? "ALL_TRAFFIC" : null
-      }
+      } 
+    */
 
       containers {
         image   = "${var.region}-docker.pkg.dev/${var.project_id}/${google_artifact_registry_repository.main.name}/${var.job_name}:latest"
