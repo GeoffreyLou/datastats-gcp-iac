@@ -70,6 +70,14 @@ jobs:
       - name: Create tfvars file
         run: echo '${{ steps.get_tfvars_secret.outputs.tfvars_secret }}' > environments/${{ env.ENVIRONMENT }}/terraform.tfvars
 
+      - name: Docker Auth
+        id: docker_auth
+        uses: 'docker/login-action@v3'
+        with: 
+          username: 'oauth2accesstoken'
+          password: '${{ steps.get_gcp_access_token.outputs.access_token }}'
+          registry: '${{ env.GCP_REGION }}-docker.pkg.dev'
+
       - name: Terraform init
         id: terraform_init
         working-directory: ./environments/${{ env.ENVIRONMENT }}
