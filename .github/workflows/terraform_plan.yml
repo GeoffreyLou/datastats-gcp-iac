@@ -11,7 +11,6 @@ on:
 
 jobs:
   terraform_plan:
-    if: false
     name: Terraform plan
 
     runs-on: ubuntu-latest
@@ -50,31 +49,27 @@ jobs:
 
       - name: Set up Cloud SDK
         id: setup_gcloud
-        uses: google-github-actions/setup-gcloud@master
-        with:
-          project_id: ${{ env.GCP_PROJECT_ID }}
-          service_account_key: ${{ env.GCP_SA_KEY }}
-          export_default_credentials: true
+        uses: google-github-actions/setup-gcloud@v2
 
       - name: Get backend secret
         id: get_backend_secret
         uses: 'google-github-actions/get-secretmanager-secrets@v2'
         with:
           secrets: |-
-            backend_secret: ${{ secrets.GCP_BACKEND_SECRET }}
+            backend_secret:${{ env.GCP_PROJECT_ID }}/${{ env.GCP_BACKEND_SECRET }}
             
       - name: Create backend file
-        run: echo "${{ steps.get_backend_secret.outputs.backend_secret }}" > environments/${{ env.ENVIRONMENT }}/backend.tf
+        run: echo '${{ steps.get_backend_secret.outputs.backend_secret }}' > environments/${{ env.ENVIRONMENT }}/backend.tf
 
       - name: Get tfvars secret
         id: get_tfvars_secret
         uses: 'google-github-actions/get-secretmanager-secrets@v2'
         with:
           secrets: |-
-            tfvars_secret: ${{ secrets.GCP_TFVARS_SECRET }}
+            tfvars_secret:${{ env.GCP_PROJECT_ID }}/${{ env.GCP_TFVARS_SECRET }}
             
-      - name: Create backend file
-        run: echo "${{ steps.get_tfvars_secret.outputs.tfvars_secret }}" > environments/${{ env.ENVIRONMENT }}/terraform.tfvars
+      - name: Create tfvars file
+        run: echo '${{ steps.get_tfvars_secret.outputs.tfvars_secret }}' > environments/${{ env.ENVIRONMENT }}/terraform.tfvars
 
       - name: Terraform init
         id: terraform_init

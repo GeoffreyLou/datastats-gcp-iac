@@ -133,7 +133,8 @@ variable "apis_to_enable" {
     "sqladmin.googleapis.com",
     "vpcaccess.googleapis.com",
     "workflows.googleapis.com",
-    "cloudbuild.googleapis.com"
+    "cloudbuild.googleapis.com",
+    "iam.googleapis.com"
   ]
 }
 
