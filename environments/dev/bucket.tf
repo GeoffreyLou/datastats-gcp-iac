@@ -24,6 +24,14 @@ module "utils_bucket" {
   env           = var.env
 }
 
+# The default jobs list to scrap
+resource "google_storage_bucket_object" "default_jobs_list" {
+  bucket       = module.utils_bucket.name
+  name         = "jobs_to_scrap.json"
+  content_type = "application/json"
+  source       = "../../data/jobs_to_scrap.json"
+}
+
 # ----------------------------------------------------------------------------------------------------------------------
 # 🟢 Urls bucket
 # ----------------------------------------------------------------------------------------------------------------------

@@ -10,7 +10,7 @@
 
   The workflow is used to create and delete resources for Cloud Run and trigger the Urls Scrapper Cloud Run Job
 
-  TODO : change gcloud commands to use http requests to generate more executions in free tier.
+  TODO : change gcloud commands to use http requests or RPC API to generate more executions in free tier.
 */
 
 # ----------------------------------------------------------------------------------------------------------------------
@@ -31,7 +31,8 @@ resource "google_project_iam_member" "workflow_sa_roles" {
     "roles/cloudbuild.builds.editor",
     "roles/iam.serviceAccountUser",
     "roles/logging.logWriter",
-    "roles/run.developer"
+    "roles/run.developer",
+    "roles/storage.objectViewer"
   ])
   project  = var.project_id
   role     = each.value
@@ -51,6 +52,7 @@ resource "google_workflows_workflow" "urls_scrapper_workflow" {
   region          = var.region
   description     = "Workflow used to generate resources for Cloud Run and trigger the Urls Scrapper Cloud Run Job"
   service_account = google_service_account.workflow_sa.id
+  call_log_level  = "LOG_ALL_CALLS"
 
   deletion_protection = false # set to "true" in production
 
@@ -102,19 +104,57 @@ main:
             minInstances: 2
             maxInstances: 3
             machineType: e2-micro
+        next: wait_for_vpc_connector
+
+    - wait_for_vpc_connector:
+        call: sys.sleep
+        args:
+          seconds: 120
+        next: update_cloud_run_job
 
     - update_cloud_run_job:
         call: gcloud
         args:
           args: "run jobs update ${module.run_job_urls_scrapper.cloud_run_job_name} --region=${var.region} --vpc-connector=${var.serverless_connector_name}"
+        next: get_json_from_bucket
 
-    - wait_before_cleanup:
+    - get_json_from_bucket:
+        call: googleapis.storage.v1.objects.get
+        args:
+          bucket: ${module.utils_bucket.name}
+          object: ${google_storage_bucket_object.default_jobs_list.name}
+          alt: media
+        result: object_data
+
+    - iterate_on_jobs:
+        for:
+          value: job_extracted
+          in: $${object_data.jobs_to_scrap}
+          steps:
+            - assign_var:
+                assign:
+                  - job: $${job_extracted}
+                next: trigger_cloud_run_job
+            - trigger_cloud_run_job:
+                call: googleapis.run.v1.namespaces.jobs.run
+                args:
+                  name: namespaces/${var.project_id}/jobs/${module.run_job_urls_scrapper.cloud_run_job_name}
+                  location: ${var.region}
+                  body:
+                    overrides:
+                        containerOverrides:
+                            env:
+                                - name: JOB_TO_SCRAP
+                                  value: $${job}
+        next: let_last_job_finish
+
+    - let_last_job_finish:
         call: sys.sleep
         args:
-          seconds: 180
-        next: remove_vpc_connector_from_cloud_run_job
+          seconds: 30
+        next: remove_vpc_connector
 
-    - remove_vpc_connector_from_cloud_run_job:
+    - remove_vpc_connector:
         call: gcloud
         args:
           args: "run jobs update ${module.run_job_urls_scrapper.cloud_run_job_name} --region=${var.region} --clear-vpc-connector"
