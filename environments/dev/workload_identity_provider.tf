@@ -1,3 +1,20 @@
+# ----------------------------------------------------------------------------------------------------------------------
+# 🟢 Context
+# ----------------------------------------------------------------------------------------------------------------------
+
+/*
+  This module creates a "ready to deploy" Workload Identity Provider to run securly the CI/CD pipeline.
+  You may have to apply manually this module in first place. 
+  That's because the CI/CD service account will have no rights when the project is created. 
+
+  Please run : terraform apply -target module.workload_identity_provider
+*/
+
+
+# ----------------------------------------------------------------------------------------------------------------------
+# 🟢 Workload Identity Provider module
+# ----------------------------------------------------------------------------------------------------------------------
+
 module "workload_identity_provider" {
   source = "../../modules/workload-identity-provider"
 
@@ -13,6 +30,10 @@ module "workload_identity_provider" {
   workload_identity_provider_issuer = var.workload_identity_provider_issuer
   service_account_roles             = var.workload_identity_provider_sa_roles
 }
+
+# ----------------------------------------------------------------------------------------------------------------------
+# 🟢 Secret output
+# ----------------------------------------------------------------------------------------------------------------------
 
 resource "google_secret_manager_secret" "workload_identity_pool_secret" {
   project = var.project_id

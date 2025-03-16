@@ -9,6 +9,7 @@ terraform {
   }
 }
 
+
 # ----------------------------------------------------------------------------------------------------------------------
 # 🟢 Context
 # ----------------------------------------------------------------------------------------------------------------------
@@ -16,21 +17,14 @@ terraform {
 /*
   This module creates a "ready to deploy" Workload Identity Provider.
   It includes the following resources:
-    - Project APIs
+    - APIs
+    - Workload Identy Pool
+    - Workload Identity Pool Provider
     - Service Account
     - Service Account roles
-    - Artifact Repository
-    - Build and push a sample Docker image 
-    - Cloud Run Job
+    - Service Account IAM Binding
 */
 
-# ----------------------------------------------------------------------------------------------------------------------
-# 🟢 Required data
-# ----------------------------------------------------------------------------------------------------------------------
-
-data "google_project" "main" {
-  project_id = var.project_id
-}
 
 # ----------------------------------------------------------------------------------------------------------------------
 # 🟢 APIs
@@ -38,11 +32,20 @@ data "google_project" "main" {
 
 resource "google_project_service" "main" {
   for_each           = toset([
-    "run.googleapis.com"
+    "iam.googleapis.com"
   ])
   project            = var.project_id
   service            = each.value
   disable_on_destroy = false
+}
+
+
+# ----------------------------------------------------------------------------------------------------------------------
+# 🟢 Required data
+# ----------------------------------------------------------------------------------------------------------------------
+
+data "google_project" "main" {
+  project_id = var.project_id
 }
 
 
@@ -73,6 +76,7 @@ resource "google_iam_workload_identity_pool_provider" "main" {
     issuer_uri = var.workload_identity_provider_issuer
   }
 }
+
 
 # ----------------------------------------------------------------------------------------------------------------------
 # 🟢 Service Account
