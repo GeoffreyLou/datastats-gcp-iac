@@ -59,7 +59,7 @@ jobs:
             backend_secret:${{ env.GCP_PROJECT_ID }}/${{ env.GCP_BACKEND_SECRET }}
             
       - name: Create backend file
-        run: echo "${{ steps.get_backend_secret.outputs.backend_secret }}" > environments/${{ env.ENVIRONMENT }}/backend.tf
+        run: echo '${{ steps.get_backend_secret.outputs.backend_secret }}' > environments/${{ env.ENVIRONMENT }}/backend.tf
 
       - name: Get tfvars secret
         id: get_tfvars_secret
@@ -68,8 +68,8 @@ jobs:
           secrets: |-
             tfvars_secret:${{ env.GCP_PROJECT_ID }}/${{ env.GCP_TFVARS_SECRET }}
             
-      - name: Create backend file
-        run: printf "%s" "${{ steps.get_tfvars_secret.outputs.tfvars_secret }}" > environments/${{ env.ENVIRONMENT }}/terraform.tfvars
+      - name: Create tfvars file
+        run: echo '${{ steps.get_tfvars_secret.outputs.tfvars_secret }}' > environments/${{ env.ENVIRONMENT }}/terraform.tfvars
 
       - name: Terraform init
         id: terraform_init
