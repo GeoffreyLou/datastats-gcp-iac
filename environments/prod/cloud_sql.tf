@@ -110,7 +110,7 @@ resource "google_sql_database_instance" "datastats_sql" {
     availability_type           = "ZONAL"
     deletion_protection_enabled = false
     disk_autoresize             = false
-    disk_type                   = "PD_SSD "
+    disk_type                   = "PD_SSD"
     disk_size                   = 10
     user_labels                 = { "env" = var.env }
 
