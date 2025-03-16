@@ -5,10 +5,16 @@ terraform {
     google = {
       version = "~> 6.17.0"
       source  = "hashicorp/google"
+      
     }
   }
 }
 
+provider "google" {
+  add_terraform_attribution_label = false
+  project                         = var.project_id
+  region                          = var.region
+}
 
 # ----------------------------------------------------------------------------------------------------------------------
 # 🟢 Project APIs
