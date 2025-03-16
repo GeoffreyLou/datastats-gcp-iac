@@ -17,6 +17,11 @@ variable "region" {
   type        = string
 }
 
+variable "scheduler_region" {
+  description = "The region used for the Cloud Scheduler"
+  type        = string
+}
+
 variable "project_name" {
   description = "The name of the project for resource naming purpose"
   type        = string
@@ -47,6 +52,28 @@ variable "urls_bucket_name" {
   type        = string
 }
 
+variable "serverless_connector_name" {
+  description = "The name of the VPC Access Connector for Serverless"
+  type        = string
+}
+
+variable "urls_scrapper_workflow_name" {
+  description = "The name of the Cloud Workflows for Urls Scrapper"
+  type        = string
+  
+}
+
+variable "router_name" {
+  description = "The name of the Cloud Router"
+  type        = string
+  
+}
+
+variable "nat_name" {
+  description = "The name of the Cloud NAT"
+  type        = string
+}
+
 # -----------------------------------------------------------------------------
 # 🟢 Optional parameters
 # -----------------------------------------------------------------------------
@@ -59,6 +86,19 @@ variable "apis_to_enable" {
     "secretmanager.googleapis.com",
     "servicenetworking.googleapis.com",
     "sqladmin.googleapis.com",
-    "vpcaccess.googleapis.com"
+    "vpcaccess.googleapis.com",
+    "workflows.googleapis.com",
+    "cloudbuild.googleapis.com"
   ]
+}
+
+variable "urls_scrapper_workflow_schedules" {
+  description = "The list of schedules for the Urls Scrapper Workflow Cloud Scheduler"
+  type        = map(string)
+  default     = {
+    "urls_scrapper_workflow_scheduler_1" = "0 10 * * *",
+    "urls_scrapper_workflow_scheduler_2" = "0 14 * * *" , 
+    "urls_scrapper_workflow_scheduler_3" = "0 18 * * *" ,
+    "urls_scrapper_workflow_scheduler_4" = "0 22 * * *"
+  }
 }

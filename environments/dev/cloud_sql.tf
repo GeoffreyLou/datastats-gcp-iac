@@ -131,8 +131,6 @@ resource "google_sql_database" "datastats_bdd" {
 }
 
 resource "google_sql_user" "datastats_user" {
-  depends_on = [ google_sql_database.datastats_bdd ]
-
   project  = var.project_id
   name     = "${var.project_name}-user"
   instance = google_sql_database_instance.datastats_sql.name
