@@ -55,7 +55,7 @@ jobs:
         uses: 'google-github-actions/get-secretmanager-secrets@v2'
         with:
           secrets: |-
-            backend_secret: ${{ secrets.GCP_BACKEND_SECRET }}
+            backend_secret:${{ env.GCP_PROJECT_ID }}/${{ env.GCP_BACKEND_SECRET }}
             
       - name: Create backend file
         run: echo "${{ steps.get_backend_secret.outputs.backend_secret }}" > environments/${{ env.ENVIRONMENT }}/backend.tf
@@ -65,7 +65,7 @@ jobs:
         uses: 'google-github-actions/get-secretmanager-secrets@v2'
         with:
           secrets: |-
-            tfvars_secret: ${{ secrets.GCP_TFVARS_SECRET }}
+            tfvars_secret:${{ env.GCP_PROJECT_ID }}/${{ env.GCP_TFVARS_SECRET }}
             
       - name: Create backend file
         run: echo "${{ steps.get_tfvars_secret.outputs.tfvars_secret }}" > environments/${{ env.ENVIRONMENT }}/terraform.tfvars
