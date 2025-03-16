@@ -35,7 +35,9 @@ module "workload_identity_provider" {
 # 🟢 Secret output
 # ----------------------------------------------------------------------------------------------------------------------
 
-resource "google_secret_manager_secret" "workload_identity_pool_secret" {
+# Commented because Terraform is not able to create this secret ATM
+
+/* resource "google_secret_manager_secret" "workload_identity_pool_secret" {
   project = var.project_id
   secret_id = "workload-identity-provider"
 
@@ -55,4 +57,4 @@ resource "google_secret_manager_secret" "workload_identity_pool_secret" {
 resource "google_secret_manager_secret_version" "workload_identity_pool_secret_version" {
   secret = google_secret_manager_secret.workload_identity_pool_secret.secret_id
   secret_data = module.workload_identity_provider.workload_identity_provider_name
-}
+} */
