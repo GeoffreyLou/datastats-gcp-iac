@@ -22,8 +22,6 @@
   - sqladmin.googleapis.com
   - secretmanager.googleapis.com
   - servicenetworking.googleapis.com
-
-  TODO : update connectivity with PSC
 */
 
 # ----------------------------------------------------------------------------------------------------------------------
