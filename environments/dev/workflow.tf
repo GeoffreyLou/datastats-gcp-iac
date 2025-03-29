@@ -8,9 +8,7 @@
   - Cloud NAT generate costs because Cloud Run Job lose internet access when connected to a Serverless VPC Connector
   - Serverless VPC Connector is expensive for this use case
 
-  The workflow is used to create and delete resources for Cloud Run and trigger the Urls Scrapper Cloud Run Job
-
-  TODO : change gcloud commands to use http requests or RPC API to generate more executions in free tier.
+  The workflow is used to create and delete resources for Cloud Run and trigger the Urls Scrapper Cloud Run Job.
 */
 
 # ----------------------------------------------------------------------------------------------------------------------
@@ -63,10 +61,27 @@ resource "google_workflows_workflow" "urls_scrapper_workflow" {
   source_contents = <<EOF
 main:
   steps:
-    - create_router:
+    - init:
+        assign:
+            - startTime: $${sys.now()}
+            - maxWaitTime: 1800
+            - pollingInterval: 15
+            - projectId: ${var.project_id}
+            - region: ${var.region}
+            - routerName: ${var.router_name}
+            - natName: ${var.nat_name}
+            - cloudRunJobName: ${var.run_job_urls_scrapper_name}
+            - connectorName: ${var.serverless_connector_name}
+            - networkName: ${google_compute_network.datastats_network.name}
+            - networkLink: ${google_compute_network.datastats_network.self_link}
+            - cloudRunSaEmail: ${module.run_job_urls_scrapper.service_account_email}
+            - UtilsBucketName: ${module.utils_bucket.name}
+            - JobsToScrapJson: ${google_storage_bucket_object.default_jobs_list.name}
+            
+    - createRouter:
         call: http.post
         args:
-          url: "https://compute.googleapis.com/compute/v1/projects/${var.project_id}/regions/${var.region}/routers"
+          url: $${"https://compute.googleapis.com/compute/v1/projects/" + projectId + "/regions/" + region + "/routers"}
           auth:
             type: OAuth2
           body:
@@ -75,107 +90,187 @@ main:
             description: "Router for Nat x Datastats Cloud Runs"
             encryptedInterconnectRouter: true
             kind: "compute#router"
-            name: ${var.router_name}
-            network: ${google_compute_network.datastats_network.self_link}
-            region: projects/${var.project_id}/regions/${var.region}
-        next: wait_for_router
+            name: $${routerName}
+            network: $${networkLink}
+            region: projects/$${projectId}/regions/$${region}
+        result: routerOperation
+        next: checkRouterStatus
 
-    - wait_for_router:
-        call: sys.sleep
+    - checkRouterStatus:
+        call: waitForResource
         args:
-          seconds: 30
-        next: create_nat
+            resourceUrl: $${routerOperation.body.selfLink}
+            maxWait: $${maxWaitTime}
+            interval: $${pollingInterval}
+        result: routerStatus
+        next: addNatToRouter
 
-    - create_nat:
-        call: gcloud
+    - addNatToRouter:
+        call: http.patch
         args:
-          args: "compute routers nats create ${var.nat_name} --router=${var.project_name}-router --region=${var.region} --auto-allocate-nat-external-ips --nat-all-subnet-ip-ranges"
-        next: create_vpc_connector
-
-    - create_vpc_connector:
-        call: http.post
-        args:
-          url: "https://vpcaccess.googleapis.com/v1/projects/${var.project_id}/locations/${var.region}/connectors?connectorId=${var.serverless_connector_name}"
+          url: $${"https://compute.googleapis.com/compute/v1/projects/" + projectId + "/regions/" + region + "/routers/" + routerName}
           auth:
             type: OAuth2
           body:
-            network: ${google_compute_network.datastats_network.name}
+            nats:
+              - name: $${natName}
+                natIpAllocateOption: "AUTO_ONLY"
+                sourceSubnetworkIpRangesToNat: "ALL_SUBNETWORKS_ALL_IP_RANGES"
+        result: natOperation
+        next: createVpcConnector
+
+    - createVpcConnector:
+        call: http.post
+        args:
+          url: $${"https://vpcaccess.googleapis.com/v1/projects/" + projectId + "/locations/" + region + "/connectors?connectorId=" + connectorName}
+          auth:
+            type: OAuth2
+          body:
+            network: $${networkName}
             ipCidrRange: "10.10.0.0/28"
             minInstances: 2
             maxInstances: 3
             machineType: e2-micro
-        next: wait_for_vpc_connector
+        result: vpcConnector
+        next: waitForVpcConnector
 
-    - wait_for_vpc_connector:
-        call: sys.sleep
+    - waitForVpcConnector:
+        call: waitForResource
         args:
-          seconds: 120
-        next: update_cloud_run_job
+          resourceUrl: $${"https://vpcaccess.googleapis.com/v1/" + vpcConnector.body.metadata.target}
+          maxWait: $${maxWaitTime}
+          interval: $${pollingInterval}
+        result: vpcConnectoreReady
+        next: getCloudRunJobConfig
 
-    - update_cloud_run_job:
-        call: gcloud
+    - getCloudRunJobConfig:
+        call: http.get
         args:
-          args: "run jobs update ${module.run_job_urls_scrapper.cloud_run_job_name} --region=${var.region} --vpc-connector=${var.serverless_connector_name}"
-        next: get_json_from_bucket
+          url: $${"https://run.googleapis.com/v2/projects/" + projectId + "/locations/" + region + "/jobs/" + cloudRunJobName}
+          auth:
+            type: OAuth2
+        result: JobConfig
+        next: AddConnectorCloudRunJob
 
-    - get_json_from_bucket:
+    - AddConnectorCloudRunJob:
+        call: http.patch
+        args:
+          url: $${"https://run.googleapis.com/v2/projects/" + projectId + "/locations/" + region + "/jobs/" + cloudRunJobName}
+          auth:
+            type: OAuth2
+          body:
+            template:
+                template:
+                  containers: $${JobConfig.body.template.template.containers}
+                  serviceAccount: $${cloudRunSaEmail}
+                  vpcAccess:
+                    connector: $${"projects/" + projectId + "/locations/" + region + "/connectors/" + connectorName}
+        result: updateJobResult
+        next: getJsonFromBucket
+
+    - getJsonFromBucket:
         call: googleapis.storage.v1.objects.get
         args:
-          bucket: ${module.utils_bucket.name}
-          object: ${google_storage_bucket_object.default_jobs_list.name}
+          bucket: $${UtilsBucketName}
+          object: $${JobsToScrapJson}
           alt: media
-        result: object_data
+        result: objectData
+        next: iterateOnJobs
 
-    - iterate_on_jobs:
+    - iterateOnJobs:
         for:
-          value: job_extracted
-          in: $${object_data.jobs_to_scrap}
+          value: jobExtracted
+          in: $${objectData.jobs_to_scrap}
           steps:
             - assign_var:
                 assign:
-                  - job: $${job_extracted}
-                next: trigger_cloud_run_job
-            - trigger_cloud_run_job:
+                  - job: $${jobExtracted}
+                next: triggerCloudRunJob
+
+            - triggerCloudRunJob:
                 call: googleapis.run.v1.namespaces.jobs.run
                 args:
-                  name: namespaces/${var.project_id}/jobs/${module.run_job_urls_scrapper.cloud_run_job_name}
-                  location: ${var.region}
+                  name: $${"namespaces/" + projectId + "/jobs/" + cloudRunJobName}
+                  location: $${region}
                   body:
                     overrides:
-                        containerOverrides:
-                            env:
-                                - name: JOB_TO_SCRAP
-                                  value: $${job}
-        next: let_last_job_finish
+                      containerOverrides:
+                        env:
+                          - name: JOB_TO_SCRAP
+                            value: $${job}
+        next: waitForLastJob
 
-    - let_last_job_finish:
+    - waitForLastJob:
         call: sys.sleep
         args:
           seconds: 30
-        next: remove_vpc_connector
+        next: RemoveConnectorCloudRunJob
 
-    - remove_vpc_connector:
-        call: gcloud
+    - RemoveConnectorCloudRunJob:
+        call: http.patch
         args:
-          args: "run jobs update ${module.run_job_urls_scrapper.cloud_run_job_name} --region=${var.region} --clear-vpc-connector"
-        next: delete_nat
+            url: $${"https://run.googleapis.com/v2/projects/" + projectId + "/locations/" + region + "/jobs/" + cloudRunJobName}
+            auth:
+              type: OAuth2
+            body:
+              template:
+                template:
+                  containers: $${JobConfig.body.template.template.containers}
+                  serviceAccount: $${cloudRunSaEmail}
+        result: removeVpcResult
+        next: deleteVpcConnector
 
-    - delete_nat:
-        call: gcloud
+    - deleteVpcConnector:
+        call: http.delete
         args:
-          args: "compute routers nats delete ${var.nat_name} --router=${var.router_name} --region=${var.region}"
-        next: delete_router
+          url: $${"https://vpcaccess.googleapis.com/v1/" + vpcConnector.body.metadata.target}
+          auth:
+            type: OAuth2
+        next: deleteRouter
 
-    - delete_router:
-        call: gcloud
+    - deleteRouter:
+        call: http.delete
         args:
-          args: "compute routers delete ${var.router_name} --region=${var.region}"
-        next: delete_vpc_connector
+            url: $${routerOperation.body.targetLink}
+            auth:
+              type: OAuth2
 
-    - delete_vpc_connector:
-        call: gcloud
+waitForResource:
+  params: [resourceUrl, maxWait, interval]
+  steps:
+    - init:
+        assign:
+          - startTime: $${sys.now()}
+
+    - checkResource:
+        call: http.get
         args:
-          args: "compute networks vpc-access connectors delete ${var.serverless_connector_name} --region=${var.region} --quiet"
+          url: $${resourceUrl}
+          auth:
+            type: OAuth2
+        result: resourceStatus
+        next: GetCorrectStatusValue
+
+    - GetCorrectStatusValue:
+        switch:
+        - condition: $${"state" in resourceStatus.body}
+          assign: 
+            - statusValue: $${resourceStatus.body.state}
+        - condition: $${"status" in resourceStatus.body}
+          assign:
+            - statusValue: $${resourceStatus.body.status}
+
+    - checkResourceState:
+        switch:
+        - condition: $${statusValue == "READY" or statusValue == "DONE"}
+          return: $${statusValue}
+        next: waitAndRetry
+
+    - waitAndRetry:
+        call: sys.sleep
+        args:
+          seconds: $${interval}
+        next: checkResource
 
 gcloud:
   params: [args]
