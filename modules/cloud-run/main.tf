@@ -96,8 +96,9 @@ resource "null_resource" "deploy_sample_job" {
   depends_on = [ google_artifact_registry_repository.main ]
 
   provisioner "local-exec" {
+    interpreter = ["bash", "-c"]
     command = <<EOT
-      docker build -t ${var.region}-docker.pkg.dev/${var.project_id}/${google_artifact_registry_repository.main.name}/${var.job_name}:latest ../../modules/cloud-run/sample/. 
+      docker build -t "${var.region}-docker.pkg.dev/${var.project_id}/${google_artifact_registry_repository.main.name}/${var.job_name}:latest" "../../modules/cloud-run/sample/."
     EOT
   }
 }
@@ -106,8 +107,9 @@ resource "null_resource" "push_sample_job" {
   depends_on = [ null_resource.deploy_sample_job ]
 
   provisioner "local-exec" {
+    interpreter = ["bash", "-c"]
     command = <<EOT
-      docker push ${var.region}-docker.pkg.dev/${var.project_id}/${google_artifact_registry_repository.main.name}/${var.job_name}:latest
+      docker push "${var.region}-docker.pkg.dev/${var.project_id}/${google_artifact_registry_repository.main.name}/${var.job_name}:latest"
     EOT
   }
 }
