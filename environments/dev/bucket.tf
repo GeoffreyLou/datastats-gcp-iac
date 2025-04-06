@@ -46,3 +46,18 @@ module "urls_bucket" {
   autoclass     = false
   env           = var.env
 }
+
+# ----------------------------------------------------------------------------------------------------------------------
+# 🟢 Archive bucket
+# ----------------------------------------------------------------------------------------------------------------------
+
+module "urls_bucket" {
+  source = "../../modules/bucket"
+  name          = var.urls_bucket_name
+  project_id    = var.project_id
+  location      = var.region
+  force_destroy = true
+  versioning    = true
+  autoclass     = false
+  env           = var.env
+}

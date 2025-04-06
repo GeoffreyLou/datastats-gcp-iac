@@ -57,6 +57,11 @@ variable "urls_bucket_name" {
   type        = string
 }
 
+variable "archive_bucket_name" {
+  description = "The name of the Bucket used to archive urls files"
+  type        = string
+}
+
 variable "serverless_connector_name" {
   description = "The name of the VPC Access Connector for Serverless"
   type        = string
