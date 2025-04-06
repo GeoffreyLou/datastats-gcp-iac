@@ -37,6 +37,11 @@ variable "run_job_urls_scrapper_name" {
   type        = string
 }
 
+variable "run_job_jobs_scrapper_name" {
+  description = "The name of the Cloud Run Job Jobs Scrapper"
+  type        = string
+}
+
 variable "url_to_scrap" {
   description = "The url that will be used for Urls Scrapper Cloud Run Job"
   type        = string  
@@ -60,7 +65,6 @@ variable "serverless_connector_name" {
 variable "urls_scrapper_workflow_name" {
   description = "The name of the Cloud Workflows for Urls Scrapper"
   type        = string
-  
 }
 
 variable "router_name" {
