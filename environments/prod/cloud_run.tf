@@ -76,6 +76,7 @@ module "run_job_jobs_scrapper" {
 
   env_vars                           = [ 
     { name  = "DATASTATS_BUCKET_URLS",    value = module.urls_bucket.name },
+    { name  = "DATASTATS_BUCKET_ARCHIVE", value = module.archive_bucket.name },
     { name  = "DB_NAME",                  value = google_sql_database.datastats_bdd.name },
     { name  = "DB_USER",                  value = google_sql_user.datastats_user.name },
     { name  = "DB_PORT",                  value = "5432" },
