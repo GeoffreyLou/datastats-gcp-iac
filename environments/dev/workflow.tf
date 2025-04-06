@@ -70,7 +70,8 @@ main:
             - region: ${var.region}
             - routerName: ${var.router_name}
             - natName: ${var.nat_name}
-            - cloudRunJobName: ${var.run_job_urls_scrapper_name}
+            - urlsScrapperJobName: ${var.run_job_urls_scrapper_name}
+            - jobsScrapperJobName: ${var.run_job_jobs_scrapper_name}
             - connectorName: ${var.serverless_connector_name}
             - networkName: ${google_compute_network.datastats_network.name}
             - networkLink: ${google_compute_network.datastats_network.self_link}
@@ -146,16 +147,16 @@ main:
     - getCloudRunJobConfig:
         call: http.get
         args:
-          url: $${"https://run.googleapis.com/v2/projects/" + projectId + "/locations/" + region + "/jobs/" + cloudRunJobName}
+          url: $${"https://run.googleapis.com/v2/projects/" + projectId + "/locations/" + region + "/jobs/" + urlsScrapperJobName}
           auth:
             type: OAuth2
         result: JobConfig
-        next: AddConnectorCloudRunJob
+        next: AddConnectorUrlsRunJob
 
-    - AddConnectorCloudRunJob:
+    - AddConnectorUrlsRunJob:
         call: http.patch
         args:
-          url: $${"https://run.googleapis.com/v2/projects/" + projectId + "/locations/" + region + "/jobs/" + cloudRunJobName}
+          url: $${"https://run.googleapis.com/v2/projects/" + projectId + "/locations/" + region + "/jobs/" + urlsScrapperJobName}
           auth:
             type: OAuth2
           body:
@@ -190,7 +191,7 @@ main:
             - triggerCloudRunJob:
                 call: googleapis.run.v1.namespaces.jobs.run
                 args:
-                  name: $${"namespaces/" + projectId + "/jobs/" + cloudRunJobName}
+                  name: $${"namespaces/" + projectId + "/jobs/" + urlsScrapperJobName}
                   location: $${region}
                   body:
                     overrides:
@@ -204,12 +205,55 @@ main:
         call: sys.sleep
         args:
           seconds: 30
-        next: RemoveConnectorCloudRunJob
+        next: RemoveConnectorUrlsRunJob
 
-    - RemoveConnectorCloudRunJob:
+    - RemoveConnectorUrlsRunJob:
         call: http.patch
         args:
-            url: $${"https://run.googleapis.com/v2/projects/" + projectId + "/locations/" + region + "/jobs/" + cloudRunJobName}
+            url: $${"https://run.googleapis.com/v2/projects/" + projectId + "/locations/" + region + "/jobs/" + urlsScrapperJobName}
+            auth:
+              type: OAuth2
+            body:
+              template:
+                template:
+                  containers: $${JobConfig.body.template.template.containers}
+                  serviceAccount: $${cloudRunSaEmail}
+        result: removeVpcResult
+        next: AddConnectorJobsRunJob
+
+    - AddConnectorJobsRunJob:
+        call: http.patch
+        args:
+          url: $${"https://run.googleapis.com/v2/projects/" + projectId + "/locations/" + region + "/jobs/" + urlsScrapperJobName}
+          auth:
+            type: OAuth2
+          body:
+            template:
+                template:
+                  containers: $${JobConfig.body.template.template.containers}
+                  serviceAccount: $${cloudRunSaEmail}
+                  vpcAccess:
+                    connector: $${"projects/" + projectId + "/locations/" + region + "/connectors/" + connectorName}
+        result: updateJobResult
+        next: triggerJobsRunJob
+
+    - triggerJobsRunJob:
+        call: googleapis.run.v1.namespaces.jobs.run
+        args:
+          name: $${"namespaces/" + projectId + "/jobs/" + jobsScrapperJobName}
+          location: $${region}
+        next: waitForJobsRunJob
+
+    - waitForJobsRunJob:
+        call: sys.sleep
+        args:
+          seconds: 240
+        next: RemoveConnectorJobsRunJob
+
+    - RemoveConnectorJobsRunJob:
+        call: http.patch
+        args:
+            url: $${"https://run.googleapis.com/v2/projects/" + projectId + "/locations/" + region + "/jobs/" + jobsScrapperJobName}
             auth:
               type: OAuth2
             body:
