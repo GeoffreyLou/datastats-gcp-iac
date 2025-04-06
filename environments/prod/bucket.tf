@@ -53,7 +53,7 @@ module "urls_bucket" {
 
 module "archive_bucket" {
   source = "../../modules/bucket"
-  name          = var.urls_bucket_name
+  name          = var.archive_bucket_name
   project_id    = var.project_id
   location      = var.region
   force_destroy = true
