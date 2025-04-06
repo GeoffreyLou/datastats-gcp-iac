@@ -23,7 +23,7 @@
 */
 
 # ----------------------------------------------------------------------------------------------------------------------
-# 🟢 Cloud Run Job
+# 🟢 Cloud Run Jobs
 # ----------------------------------------------------------------------------------------------------------------------
 
 module "run_job_urls_scrapper" {
@@ -44,6 +44,37 @@ module "run_job_urls_scrapper" {
   env_vars                           = [ 
     { name  = "URL_TO_SCRAP",             value = var.url_to_scrap },
     { name  = "DATASTATS_BUCKET_UTILS",   value = module.utils_bucket.name },
+    { name  = "DATASTATS_BUCKET_URLS",    value = module.urls_bucket.name },
+    { name  = "DB_NAME",                  value = google_sql_database.datastats_bdd.name },
+    { name  = "DB_USER",                  value = google_sql_user.datastats_user.name },
+    { name  = "DB_PORT",                  value = "5432" },
+    { name  = "DB_HOST",                  value = google_sql_database_instance.datastats_sql.ip_address[0].ip_address },
+  ]
+
+   secret_env_vars                   = [ 
+    { name  = "DB_ROOT_CERT",      secret_name = google_secret_manager_secret.ssl_server_ca_cert.id },
+    { name  = "DB_CERT",           secret_name = google_secret_manager_secret.ssl_cert.id },
+    { name  = "DB_KEY",            secret_name = google_secret_manager_secret.ssl_private_key.id },
+    { name  = "DB_USER_PASSWORD",  secret_name = google_secret_manager_secret.user_password_secret.id }
+  ]
+}
+
+module "run_job_jobs_scrapper" {
+  source = "../../modules/cloud-run"
+
+  project_id                         = var.project_id
+  env                                = var.env
+  region                             = var.region
+  job_name                           = var.run_job_jobs_scrapper_name
+  cloud_sql_instance_connection_name = [ google_sql_database_instance.datastats_sql.connection_name ]
+  deletion_protection                = false
+  sa_roles                           = [ 
+    "roles/cloudsql.client", 
+    "roles/secretmanager.secretAccessor",
+    "roles/storage.objectUser"
+  ]
+
+  env_vars                           = [ 
     { name  = "DATASTATS_BUCKET_URLS",    value = module.urls_bucket.name },
     { name  = "DB_NAME",                  value = google_sql_database.datastats_bdd.name },
     { name  = "DB_USER",                  value = google_sql_user.datastats_user.name },
