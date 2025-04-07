@@ -79,26 +79,6 @@ main:
             - UtilsBucketName: ${module.utils_bucket.name}
             - JobsToScrapJson: ${google_storage_bucket_object.default_jobs_list.name}
             
-main:
-  steps:
-    - init:
-        assign:
-            - startTime: $${sys.now()}
-            - maxWaitTime: 1800
-            - pollingInterval: 15
-            - projectId: ${var.project_id}
-            - region: ${var.region}
-            - routerName: ${var.router_name}
-            - natName: ${var.nat_name}
-            - urlsScrapperJobName: ${var.run_job_urls_scrapper_name}
-            - jobsScrapperJobName: ${var.run_job_jobs_scrapper_name}
-            - connectorName: ${var.serverless_connector_name}
-            - networkName: ${google_compute_network.datastats_network.name}
-            - networkLink: ${google_compute_network.datastats_network.self_link}
-            - cloudRunSaEmail: ${module.run_job_urls_scrapper.service_account_email}
-            - UtilsBucketName: ${module.utils_bucket.name}
-            - JobsToScrapJson: ${google_storage_bucket_object.default_jobs_list.name}
-            
     - createRouter:
         call: http.post
         args:
@@ -244,7 +224,7 @@ main:
     - getJobsRunJobConfig:
         call: http.get
         args:
-          url: $${"https://run.googleapis.com/v2/projects/" + projectId + "/locations/" + region + "/jobs/" + urlsScrapperJobName}
+          url: $${"https://run.googleapis.com/v2/projects/" + projectId + "/locations/" + region + "/jobs/" + jobsScrapperJobName}
           auth:
             type: OAuth2
         result: JobsRunJobConfig
