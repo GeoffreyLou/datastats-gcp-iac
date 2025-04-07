@@ -224,7 +224,7 @@ main:
     - getJobsRunJobConfig:
         call: http.get
         args:
-          url: $${"https://run.googleapis.com/v2/projects/" + projectId + "/locations/" + region + "/jobs/" + urlsScrapperJobName}
+          url: $${"https://run.googleapis.com/v2/projects/" + projectId + "/locations/" + region + "/jobs/" + jobsScrapperJobName}
           auth:
             type: OAuth2
         result: JobsRunJobConfig
