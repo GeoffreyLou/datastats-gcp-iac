@@ -79,6 +79,26 @@ main:
             - UtilsBucketName: ${module.utils_bucket.name}
             - JobsToScrapJson: ${google_storage_bucket_object.default_jobs_list.name}
             
+main:
+  steps:
+    - init:
+        assign:
+            - startTime: $${sys.now()}
+            - maxWaitTime: 1800
+            - pollingInterval: 15
+            - projectId: ${var.project_id}
+            - region: ${var.region}
+            - routerName: ${var.router_name}
+            - natName: ${var.nat_name}
+            - urlsScrapperJobName: ${var.run_job_urls_scrapper_name}
+            - jobsScrapperJobName: ${var.run_job_jobs_scrapper_name}
+            - connectorName: ${var.serverless_connector_name}
+            - networkName: ${google_compute_network.datastats_network.name}
+            - networkLink: ${google_compute_network.datastats_network.self_link}
+            - cloudRunSaEmail: ${module.run_job_urls_scrapper.service_account_email}
+            - UtilsBucketName: ${module.utils_bucket.name}
+            - JobsToScrapJson: ${google_storage_bucket_object.default_jobs_list.name}
+            
     - createRouter:
         call: http.post
         args:
@@ -142,15 +162,15 @@ main:
           maxWait: $${maxWaitTime}
           interval: $${pollingInterval}
         result: vpcConnectoreReady
-        next: getCloudRunJobConfig
+        next: getUrlsRunJobConfig
 
-    - getCloudRunJobConfig:
+    - getUrlsRunJobConfig:
         call: http.get
         args:
           url: $${"https://run.googleapis.com/v2/projects/" + projectId + "/locations/" + region + "/jobs/" + urlsScrapperJobName}
           auth:
             type: OAuth2
-        result: JobConfig
+        result: UrlsRunJobConfig
         next: AddConnectorUrlsRunJob
 
     - AddConnectorUrlsRunJob:
@@ -162,7 +182,7 @@ main:
           body:
             template:
                 template:
-                  containers: $${JobConfig.body.template.template.containers}
+                  containers: $${UrlsRunJobConfig.body.template.template.containers}
                   serviceAccount: $${cloudRunSaEmail}
                   vpcAccess:
                     connector: $${"projects/" + projectId + "/locations/" + region + "/connectors/" + connectorName}
@@ -216,21 +236,30 @@ main:
             body:
               template:
                 template:
-                  containers: $${JobConfig.body.template.template.containers}
+                  containers: $${UrlsRunJobConfig.body.template.template.containers}
                   serviceAccount: $${cloudRunSaEmail}
         result: removeVpcResult
+        next: getJobsRunJobConfig
+
+    - getJobsRunJobConfig:
+        call: http.get
+        args:
+          url: $${"https://run.googleapis.com/v2/projects/" + projectId + "/locations/" + region + "/jobs/" + urlsScrapperJobName}
+          auth:
+            type: OAuth2
+        result: JobsRunJobConfig
         next: AddConnectorJobsRunJob
 
     - AddConnectorJobsRunJob:
         call: http.patch
         args:
-          url: $${"https://run.googleapis.com/v2/projects/" + projectId + "/locations/" + region + "/jobs/" + urlsScrapperJobName}
+          url: $${"https://run.googleapis.com/v2/projects/" + projectId + "/locations/" + region + "/jobs/" + jobsScrapperJobName}
           auth:
             type: OAuth2
           body:
             template:
                 template:
-                  containers: $${JobConfig.body.template.template.containers}
+                  containers: $${JobsRunJobConfig.body.template.template.containers}
                   serviceAccount: $${cloudRunSaEmail}
                   vpcAccess:
                     connector: $${"projects/" + projectId + "/locations/" + region + "/connectors/" + connectorName}
@@ -259,7 +288,7 @@ main:
             body:
               template:
                 template:
-                  containers: $${JobConfig.body.template.template.containers}
+                  containers: $${JobsRunJobConfig.body.template.template.containers}
                   serviceAccount: $${cloudRunSaEmail}
         result: removeVpcResult
         next: deleteVpcConnector
