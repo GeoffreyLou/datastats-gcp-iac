@@ -30,7 +30,8 @@ resource "google_project_iam_member" "workflow_sa_roles" {
     "roles/iam.serviceAccountUser",
     "roles/logging.logWriter",
     "roles/run.developer",
-    "roles/storage.objectViewer"
+    "roles/storage.objectViewer",
+    "roles/artifactregistry.reader"
   ])
   project  = var.project_id
   role     = each.value
