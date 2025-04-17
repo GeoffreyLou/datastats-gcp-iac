@@ -52,6 +52,9 @@ resource "google_artifact_registry_repository" "main" {
   location      = var.region
   description   = "${var.job_name} Artifact Registry Repository in [${var.env}]"
   format        = "DOCKER"
+  labels        = {
+    env = var.env
+  }
 
   cleanup_policies {
     id     = "keep-latest"
@@ -60,6 +63,15 @@ resource "google_artifact_registry_repository" "main" {
     condition {
       tag_state    = "TAGGED"
       tag_prefixes = [ "latest" ]
+    }
+  }
+
+  cleanup_policies {
+    id     = "delete-untagged"
+    action = "DELETE"
+
+    condition {
+      tag_state    = "UNTAGGED"
     }
   }
 }
