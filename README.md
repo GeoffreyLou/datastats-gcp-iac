@@ -1,4 +1,4 @@
-# 🚀 Urls Scraper
+# 🚀 Datastats GCP IaC
 
 This repository is a part of <strong>Datastats</strong> x <strong>GCP</strong> project. 
 
@@ -20,13 +20,12 @@ To minimize costs, the development environment is only used during coding, which
 
 ## 👷🏻‍♀️ Architecture
 
-![Datastats global architecture](images/datastats.png)
+![Datastats global architecture](assets/datastats.png)
 
 
 ## 💡 What's next ? 
 
 What will be added to this repository?
-- Jobs Scrapper Cloud Run + Scheduler
 - DBT Cloud Run + Scheduler
 - Monthly Analyzer Cloud Run + Scheduler
 - Dataviz solution (Looker, Metabase, TBD) with public URL
