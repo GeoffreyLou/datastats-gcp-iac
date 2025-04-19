@@ -102,3 +102,16 @@ resource "google_service_networking_connection" "private_vpc_connection" {
   service                 = "servicenetworking.googleapis.com"
   reserved_peering_ranges = [google_compute_global_address.peering_ip.name]
 }
+
+resource "google_dns_managed_zone" "private_googleapis" {
+  name        = "private-googleapis"
+  dns_name    = "googleapis.com."
+  visibility  = "private"
+  project     = var.project_id
+
+  private_visibility_config {
+    networks {
+      network_url = google_compute_network.datastats_network.id
+    }
+  }
+}

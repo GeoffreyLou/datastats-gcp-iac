@@ -26,7 +26,7 @@ resource "google_compute_network" "datastats_network" {
 
 resource "google_compute_subnetwork" "datastats_subnetwork" {
   name                     = "${var.project_name}-subnetwork"
-  ip_cidr_range            = "180.0.0.0/16"
+  ip_cidr_range            = "172.16.0.0/12"
   region                   = var.region
   project                  = var.project_id
   network                  = google_compute_network.datastats_network.id
