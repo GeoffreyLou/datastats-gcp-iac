@@ -35,10 +35,16 @@ module "run_job_urls_scrapper" {
   job_name                           = var.run_job_urls_scrapper_name
   cloud_sql_instance_connection_name = [ google_sql_database_instance.datastats_sql.connection_name ]
   deletion_protection                = false
+  egress                             = "ALL_TRAFFIC"
+  vpc_access_tags                    = [ "cloud-run" ]
+  network_name                       = google_compute_network.datastats_network.id
+  subnetwork_name                    = google_compute_subnetwork.datastats_subnetwork.id
   sa_roles                           = [ 
     "roles/cloudsql.client", 
     "roles/secretmanager.secretAccessor",
-    "roles/storage.objectUser"
+    "roles/storage.objectUser",
+    "roles/compute.networkUser",
+    "roles/logging.logWriter"
   ]
 
   env_vars                           = [ 
@@ -68,10 +74,16 @@ module "run_job_jobs_scrapper" {
   job_name                           = var.run_job_jobs_scrapper_name
   cloud_sql_instance_connection_name = [ google_sql_database_instance.datastats_sql.connection_name ]
   deletion_protection                = false
+  egress                             = "ALL_TRAFFIC"
+  vpc_access_tags                    = [ "cloud-run" ]
+  network_name                       = google_compute_network.datastats_network.id
+  subnetwork_name                    = google_compute_subnetwork.datastats_subnetwork.id
   sa_roles                           = [ 
     "roles/cloudsql.client", 
     "roles/secretmanager.secretAccessor",
-    "roles/storage.objectUser"
+    "roles/storage.objectUser",
+    "roles/compute.networkUser",
+    "roles/logging.logWriter"
   ]
 
   env_vars                           = [ 

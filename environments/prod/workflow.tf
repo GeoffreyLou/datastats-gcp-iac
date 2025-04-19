@@ -73,10 +73,7 @@ main:
             - natName: ${var.nat_name}
             - urlsScrapperJobName: ${var.run_job_urls_scrapper_name}
             - jobsScrapperJobName: ${var.run_job_jobs_scrapper_name}
-            - connectorName: ${var.serverless_connector_name}
-            - networkName: ${google_compute_network.datastats_network.name}
             - networkLink: ${google_compute_network.datastats_network.self_link}
-            - cloudRunSaEmail: ${module.run_job_urls_scrapper.service_account_email}
             - UtilsBucketName: ${module.utils_bucket.name}
             - JobsToScrapJson: ${google_storage_bucket_object.default_jobs_list.name}
             
@@ -119,55 +116,6 @@ main:
                 natIpAllocateOption: "AUTO_ONLY"
                 sourceSubnetworkIpRangesToNat: "ALL_SUBNETWORKS_ALL_IP_RANGES"
         result: natOperation
-        next: createVpcConnector
-
-    - createVpcConnector:
-        call: http.post
-        args:
-          url: $${"https://vpcaccess.googleapis.com/v1/projects/" + projectId + "/locations/" + region + "/connectors?connectorId=" + connectorName}
-          auth:
-            type: OAuth2
-          body:
-            network: $${networkName}
-            ipCidrRange: "10.10.0.0/28"
-            minInstances: 2
-            maxInstances: 3
-            machineType: e2-micro
-        result: vpcConnector
-        next: waitForVpcConnector
-
-    - waitForVpcConnector:
-        call: waitForResource
-        args:
-          resourceUrl: $${"https://vpcaccess.googleapis.com/v1/" + vpcConnector.body.metadata.target}
-          maxWait: $${maxWaitTime}
-          interval: $${pollingInterval}
-        result: vpcConnectoreReady
-        next: getUrlsRunJobConfig
-
-    - getUrlsRunJobConfig:
-        call: http.get
-        args:
-          url: $${"https://run.googleapis.com/v2/projects/" + projectId + "/locations/" + region + "/jobs/" + urlsScrapperJobName}
-          auth:
-            type: OAuth2
-        result: UrlsRunJobConfig
-        next: AddConnectorUrlsRunJob
-
-    - AddConnectorUrlsRunJob:
-        call: http.patch
-        args:
-          url: $${"https://run.googleapis.com/v2/projects/" + projectId + "/locations/" + region + "/jobs/" + urlsScrapperJobName}
-          auth:
-            type: OAuth2
-          body:
-            template:
-                template:
-                  containers: $${UrlsRunJobConfig.body.template.template.containers}
-                  serviceAccount: $${cloudRunSaEmail}
-                  vpcAccess:
-                    connector: $${"projects/" + projectId + "/locations/" + region + "/connectors/" + connectorName}
-        result: updateJobResult
         next: getJsonFromBucket
 
     - getJsonFromBucket:
@@ -206,45 +154,6 @@ main:
         call: sys.sleep
         args:
           seconds: 30
-        next: RemoveConnectorUrlsRunJob
-
-    - RemoveConnectorUrlsRunJob:
-        call: http.patch
-        args:
-            url: $${"https://run.googleapis.com/v2/projects/" + projectId + "/locations/" + region + "/jobs/" + urlsScrapperJobName}
-            auth:
-              type: OAuth2
-            body:
-              template:
-                template:
-                  containers: $${UrlsRunJobConfig.body.template.template.containers}
-                  serviceAccount: $${cloudRunSaEmail}
-        result: removeVpcResult
-        next: getJobsRunJobConfig
-
-    - getJobsRunJobConfig:
-        call: http.get
-        args:
-          url: $${"https://run.googleapis.com/v2/projects/" + projectId + "/locations/" + region + "/jobs/" + jobsScrapperJobName}
-          auth:
-            type: OAuth2
-        result: JobsRunJobConfig
-        next: AddConnectorJobsRunJob
-
-    - AddConnectorJobsRunJob:
-        call: http.patch
-        args:
-          url: $${"https://run.googleapis.com/v2/projects/" + projectId + "/locations/" + region + "/jobs/" + jobsScrapperJobName}
-          auth:
-            type: OAuth2
-          body:
-            template:
-                template:
-                  containers: $${JobsRunJobConfig.body.template.template.containers}
-                  serviceAccount: $${cloudRunSaEmail}
-                  vpcAccess:
-                    connector: $${"projects/" + projectId + "/locations/" + region + "/connectors/" + connectorName}
-        result: updateJobResult
         next: triggerJobsRunJob
 
     - triggerJobsRunJob:
@@ -257,29 +166,7 @@ main:
     - waitForJobsRunJob:
         call: sys.sleep
         args:
-          seconds: 240
-        next: RemoveConnectorJobsRunJob
-
-    - RemoveConnectorJobsRunJob:
-        call: http.patch
-        args:
-            url: $${"https://run.googleapis.com/v2/projects/" + projectId + "/locations/" + region + "/jobs/" + jobsScrapperJobName}
-            auth:
-              type: OAuth2
-            body:
-              template:
-                template:
-                  containers: $${JobsRunJobConfig.body.template.template.containers}
-                  serviceAccount: $${cloudRunSaEmail}
-        result: removeVpcResult
-        next: deleteVpcConnector
-
-    - deleteVpcConnector:
-        call: http.delete
-        args:
-          url: $${"https://vpcaccess.googleapis.com/v1/" + vpcConnector.body.metadata.target}
-          auth:
-            type: OAuth2
+          seconds: 30
         next: deleteRouter
 
     - deleteRouter:
@@ -345,5 +232,5 @@ gcloud:
       result: result_builds_create
   - return_build_result:
       return: $${text.split(text.decode(base64.decode(result_builds_create.metadata.build.results.buildStepOutputs[0])), "\n")}
-    EOF
+EOF
 }

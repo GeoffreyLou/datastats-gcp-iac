@@ -22,16 +22,6 @@ variable "env" {
   type        = string
 }
 
-
-variable "sa_roles" {
-  description = "The roles to assign to the Cloud Run service account"
-  type        = list(string)
-  default     = [
-    "roles/cloudsql.client",
-    "roles/secretmanager.secretAccessor",
-  ]
-}
-
 variable "deletion_protection" {
   description = "The deletion protection on terraform destroy, must be true on prod"
   type        = string
@@ -107,3 +97,40 @@ variable "cloud_sql_instance_connection_name" {
   default     = []
 }
 
+variable "sa_roles" {
+  description = "The roles to assign to the Cloud Run service account"
+  type        = list(string)
+  default     = [
+    "roles/cloudsql.client",
+    "roles/secretmanager.secretAccessor",
+  ]
+}
+
+variable "network_name" {
+  description = "value of the network name attached to the Cloud Run Job"
+  type        = string
+  default     = null
+}
+
+variable "subnetwork_name" {
+  description = "value of the subnetwork name attached to the Cloud Run Job"
+  type        = string
+  default     = null
+}
+
+variable "egress" {
+  description = "The egress setting for the VPC access connector"
+  type        = string
+  default     = null
+
+  validation {
+    condition     = var.egress == null || var.egress == "ALL_TRAFFIC" || var.egress == "PRIVATE_RANGES_ONLY"
+    error_message = "egress must be one of 'ALL_TRAFFIC', 'PRIVATE_RANGES_ONLY' or null"
+  }
+}
+
+variable "vpc_access_tags" {
+  description = "Optional network tags for resources connected to the VPC"
+  type        = list(string)
+  default     = null
+}
