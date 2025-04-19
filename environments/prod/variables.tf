@@ -151,9 +151,9 @@ variable "urls_scrapper_workflow_schedules" {
   description = "The list of schedules for the Urls Scrapper Workflow Cloud Scheduler"
   type        = map(string)
   default     = {
-    "urls_scrapper_workflow_scheduler_1" = "0 10 * * *",
-    "urls_scrapper_workflow_scheduler_2" = "0 14 * * *" , 
-    "urls_scrapper_workflow_scheduler_3" = "0 18 * * *" ,
-    "urls_scrapper_workflow_scheduler_4" = "0 22 * * *"
+    "urls_scrapper_workflow_scheduler_1" = "0 9 * * *",
+    "urls_scrapper_workflow_scheduler_2" = "0 13 * * *" , 
+    "urls_scrapper_workflow_scheduler_3" = "0 17 * * *" ,
+    "urls_scrapper_workflow_scheduler_4" = "0 21 * * *"
   }
 }
