@@ -1,14 +1,3 @@
-terraform {
-  required_version = "~> 1.10.0"
-
-  required_providers {
-    google = {
-      version = "~> 6.17.0"
-      source  = "hashicorp/google"
-    }
-  }
-}
-
 # ----------------------------------------------------------------------------------------------------------------------
 # 🟢 Context
 # ----------------------------------------------------------------------------------------------------------------------
@@ -25,6 +14,23 @@ terraform {
 
   Be aware to get Artifact Repository output for CI/CD purpose
 */
+
+
+# ----------------------------------------------------------------------------------------------------------------------
+# 🟢 Configuration
+# ----------------------------------------------------------------------------------------------------------------------
+
+terraform {
+  required_version = "~> 1.10.0"
+
+  required_providers {
+    google = {
+      version = "~> 6.17.0"
+      source  = "hashicorp/google"
+    }
+  }
+}
+
 
 # ----------------------------------------------------------------------------------------------------------------------
 # 🟢 APIs
@@ -108,7 +114,6 @@ resource "null_resource" "deploy_sample_job" {
   depends_on = [ google_artifact_registry_repository.main ]
 
   provisioner "local-exec" {
-    interpreter = ["/bin/bash", "-c"]
     command = "docker build -t ${var.region}-docker.pkg.dev/${var.project_id}/${google_artifact_registry_repository.main.name}/${var.job_name}:latest ../../modules/cloud-run/sample/. && docker push ${var.region}-docker.pkg.dev/${var.project_id}/${google_artifact_registry_repository.main.name}/${var.job_name}:latest"
   }
 }
@@ -144,20 +149,32 @@ resource "google_cloud_run_v2_job" "main" {
       timeout         = var.timeout
       max_retries     = var.max_retries
 
-      dynamic "volumes" {
-        for_each = length(var.cloud_sql_instance_connection_name) > 0 ? [1] : []
-        content {
-          name = "cloudsql"
-          cloud_sql_instance {
-            instances = var.cloud_sql_instance_connection_name
-          }
+      vpc_access {
+        egress = var.egress
+        network_interfaces {
+          network    = var.network_name 
+          subnetwork = var.subnetwork_name 
+          tags       = var.vpc_access_tags
         }
       }
+
+      volumes {
+        name = length(var.cloud_sql_instance_connection_name) > 0 ? "cloudsql" : null
+        cloud_sql_instance {
+          instances = var.cloud_sql_instance_connection_name
+        }
+      }
+
 
       containers {
         image   = "${var.region}-docker.pkg.dev/${var.project_id}/${google_artifact_registry_repository.main.name}/${var.job_name}:latest"
         command = var.command
         args    = var.args
+
+        volume_mounts {
+          name       = length(var.cloud_sql_instance_connection_name) > 0 ? "cloudsql" : null
+          mount_path = length(var.cloud_sql_instance_connection_name) > 0 ? "/cloudsql" : null
+        }
 
         resources {
           limits = {
