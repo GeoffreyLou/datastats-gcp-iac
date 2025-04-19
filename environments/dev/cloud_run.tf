@@ -58,10 +58,10 @@ module "run_job_urls_scrapper" {
   ]
 
    secret_env_vars                   = [ 
-    { name  = "DB_ROOT_CERT",      secret_name = google_secret_manager_secret.ssl_server_ca_cert.id },
-    { name  = "DB_CERT",           secret_name = google_secret_manager_secret.ssl_cert.id },
-    { name  = "DB_KEY",            secret_name = google_secret_manager_secret.ssl_private_key.id },
-    { name  = "DB_USER_PASSWORD",  secret_name = google_secret_manager_secret.user_password_secret.id }
+    { name  = "DB_ROOT_CERT",      secret_name = google_secret_manager_secret.ssl_server_ca_cert.name },
+    { name  = "DB_CERT",           secret_name = google_secret_manager_secret.ssl_cert.name },
+    { name  = "DB_KEY",            secret_name = google_secret_manager_secret.ssl_private_key.name },
+    { name  = "DB_USER_PASSWORD",  secret_name = google_secret_manager_secret.user_password_secret.name }
   ]
 }
 
@@ -96,9 +96,9 @@ module "run_job_jobs_scrapper" {
   ]
 
    secret_env_vars                   = [ 
-    { name  = "DB_ROOT_CERT",      secret_name = google_secret_manager_secret.ssl_server_ca_cert.id },
-    { name  = "DB_CERT",           secret_name = google_secret_manager_secret.ssl_cert.id },
-    { name  = "DB_KEY",            secret_name = google_secret_manager_secret.ssl_private_key.id },
-    { name  = "DB_USER_PASSWORD",  secret_name = google_secret_manager_secret.user_password_secret.id }
+    { name  = "DB_ROOT_CERT",      secret_name = google_secret_manager_secret.ssl_server_ca_cert.name },
+    { name  = "DB_CERT",           secret_name = google_secret_manager_secret.ssl_cert.name },
+    { name  = "DB_KEY",            secret_name = google_secret_manager_secret.ssl_private_key.name },
+    { name  = "DB_USER_PASSWORD",  secret_name = google_secret_manager_secret.user_password_secret.name }
   ]
 }
