@@ -45,11 +45,7 @@ resource "google_cloud_scheduler_job" "urls_scrapper_workflow_scheduler" {
   http_target {
     uri         = "https://workflowexecutions.googleapis.com/v1/projects/${var.project_id}/locations/${var.region}/workflows/${google_workflows_workflow.urls_scrapper_workflow.name}/executions"
     http_method = "POST"
-    headers = {
-      "Content-Type" = "application/octet-stream",
-      "User-Agent"   = "Google-Cloud-Scheduler"
-    }
-
+    
     oauth_token {
       service_account_email = google_service_account.scheduler_sa.email
     }

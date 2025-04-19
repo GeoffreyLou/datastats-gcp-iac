@@ -26,13 +26,57 @@ resource "google_compute_network" "datastats_network" {
 
 resource "google_compute_subnetwork" "datastats_subnetwork" {
   name                     = "${var.project_name}-subnetwork"
-  ip_cidr_range            = "180.0.0.0/16"
+  ip_cidr_range            = "172.16.0.0/12"
   region                   = var.region
   project                  = var.project_id
   network                  = google_compute_network.datastats_network.id
   private_ip_google_access = true
 }
 
+
+# ----------------------------------------------------------------------------------------------------------------------
+# 🟢 Firewall rules
+# ----------------------------------------------------------------------------------------------------------------------
+
+resource "google_compute_firewall" "allow_egress_cloud_run" {
+  name        = "${var.project_name}-allow-egress-cloud-run"
+  network     = google_compute_network.datastats_network.name
+  description = "Allow outbound internet access for Cloud Run jobs"
+
+  direction = "EGRESS"
+  allow {
+    protocol = "all"
+  }
+
+  destination_ranges = ["0.0.0.0/0"] 
+  priority           = 1000
+  target_tags        = ["cloud-run"]
+}
+
+resource "google_compute_firewall" "deny_all_egress" {
+  name    = "${var.project_name}-deny-all-egress"
+  network = google_compute_network.datastats_network.name
+  direction = "EGRESS"
+  priority  = 2000
+  deny {
+    protocol = "all"
+  }
+  destination_ranges = ["0.0.0.0/0"]
+}
+
+resource "google_compute_firewall" "deny_all_inbound" {
+  name        = "${var.project_name}-deny-all-inbound"
+  network     = google_compute_network.datastats_network.name
+  description = "Deny all inbound traffic to the network"
+
+  direction = "INGRESS"
+  deny {
+    protocol = "all"
+  }
+
+  source_ranges = ["0.0.0.0/0"] 
+  priority      = 1000
+}
 
 # ----------------------------------------------------------------------------------------------------------------------
 # 🟢 Cloud SQL Private IP
