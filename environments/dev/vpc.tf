@@ -25,7 +25,7 @@ resource "google_compute_network" "datastats_network" {
 }
 
 resource "google_compute_subnetwork" "datastats_subnetwork" {
-  name                     = "${var.project_name}-subnetwork"
+  name                     = "${var.project_name}-backend-subnet"
   ip_cidr_range            = "172.16.0.0/12"
   region                   = var.region
   project                  = var.project_id
@@ -38,10 +38,10 @@ resource "google_compute_subnetwork" "datastats_subnetwork" {
 # 🟢 Firewall rules
 # ----------------------------------------------------------------------------------------------------------------------
 
-resource "google_compute_firewall" "allow_egress_cloud_run" {
-  name        = "${var.project_name}-allow-egress-cloud-run"
+resource "google_compute_firewall" "allow_internet_access" {
+  name        = "${var.project_name}-allow-internet-access"
   network     = google_compute_network.datastats_network.name
-  description = "Allow outbound internet access for Cloud Run jobs"
+  description = "Allow outbound internet access "
 
   direction = "EGRESS"
   allow {
@@ -50,7 +50,7 @@ resource "google_compute_firewall" "allow_egress_cloud_run" {
 
   destination_ranges = ["0.0.0.0/0"] 
   priority           = 1000
-  target_tags        = ["cloud-run"]
+  target_tags        = ["internet-access"]
 }
 
 resource "google_compute_firewall" "deny_all_egress" {
@@ -78,6 +78,25 @@ resource "google_compute_firewall" "deny_all_inbound" {
   priority      = 1000
 }
 
+resource "google_compute_firewall" "allow_ssh_from_ip" {
+  name        = "allow-ssh-from-ip"
+  network     = google_compute_network.datastats_network.name
+  description = "Allow SSH access from IP address"
+
+  direction     = "INGRESS"
+  priority      = 900
+  source_ranges = [
+    var.public_ip,
+    "35.235.240.0/20"
+  ] 
+  target_tags   = ["bastion"]
+
+  allow {
+    protocol = "tcp"
+    ports    = ["22"]
+  }
+}
+
 # ----------------------------------------------------------------------------------------------------------------------
 # 🟢 Cloud SQL Private IP
 # ----------------------------------------------------------------------------------------------------------------------
@@ -101,17 +120,4 @@ resource "google_service_networking_connection" "private_vpc_connection" {
   network                 = google_compute_network.datastats_network.id
   service                 = "servicenetworking.googleapis.com"
   reserved_peering_ranges = [google_compute_global_address.peering_ip.name]
-}
-
-resource "google_dns_managed_zone" "private_googleapis" {
-  name        = "private-googleapis"
-  dns_name    = "googleapis.com."
-  visibility  = "private"
-  project     = var.project_id
-
-  private_visibility_config {
-    networks {
-      network_url = google_compute_network.datastats_network.id
-    }
-  }
 }
