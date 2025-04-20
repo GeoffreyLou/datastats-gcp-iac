@@ -102,6 +102,7 @@ resource "google_sql_database_instance" "datastats_sql" {
   root_password       = random_password.root_password.result
   deletion_protection = false
 
+
   settings {
     tier                        = "db-f1-micro"
     edition                     = "ENTERPRISE"
