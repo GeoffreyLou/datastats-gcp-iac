@@ -20,6 +20,9 @@ To minimize costs, the development environment is only used during coding, which
 
 ## 👷🏻‍♀️ Architecture
 
+This is the final architecture of the project. It's still :construction_worker: under construction :construction_worker:. 
+Check "**What's next ?**" section to know what will be added soon to finish the project. 
+
 ![Datastats global architecture](assets/datastats.png)
 
 
@@ -27,5 +30,5 @@ To minimize costs, the development environment is only used during coding, which
 
 What will be added to this repository?
 - DBT Cloud Run + Scheduler
-- Monthly Analyzer Cloud Run + Scheduler
-- Dataviz solution (Looker, Metabase, TBD) with public URL
+- Superset on Compute Engine
+- External Load Balancer with custom domain
