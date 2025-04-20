@@ -26,7 +26,7 @@ resource "google_project_iam_member" "workflow_sa_roles" {
     "roles/vpcaccess.admin",
     "roles/vpcaccess.viewer",
     "roles/compute.networkAdmin",
-    "roles/cloudbuild.builds.editor",
+    "roles/cloudbuild.builds.editor", # Required only if the workflow uses gcloud sub-workflow
     "roles/iam.serviceAccountUser",
     "roles/logging.logWriter",
     "roles/run.developer",
@@ -40,7 +40,7 @@ resource "google_project_iam_member" "workflow_sa_roles" {
 
 
 # ----------------------------------------------------------------------------------------------------------------------
-# 🟢 Urls scrapper workflow
+# 🟢 Daily webscraping workflow
 # ----------------------------------------------------------------------------------------------------------------------
 
 resource "google_workflows_workflow" "urls_scrapper_workflow" {

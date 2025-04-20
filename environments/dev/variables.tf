@@ -129,6 +129,16 @@ variable "workload_identity_provider_sa_roles" {
   type        = list(string)
 }
 
+variable "zone" {
+  description = "The zone used for resources that require a zone"
+  type        = string
+}
+
+variable "public_ip" {
+  description = "The public IP to allow in firewall rule for SSH access"
+  type        = string
+}
+
 # -----------------------------------------------------------------------------
 # 🟢 Optional parameters
 # -----------------------------------------------------------------------------
@@ -144,8 +154,7 @@ variable "apis_to_enable" {
     "vpcaccess.googleapis.com",
     "workflows.googleapis.com",
     "cloudbuild.googleapis.com",
-    "iam.googleapis.com",
-    "dns.googleapis.com"
+    "iam.googleapis.com"
   ]
 }
 
