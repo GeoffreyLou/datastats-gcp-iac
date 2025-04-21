@@ -36,7 +36,7 @@ module "run_job_urls_scrapper" {
   cloud_sql_instance_connection_name = [ google_sql_database_instance.datastats_sql.connection_name ]
   deletion_protection                = false
   egress                             = "ALL_TRAFFIC"
-  vpc_access_tags                    = [ "cloud-run" ]
+  vpc_access_tags                    = [ "internet-access" ]
   network_name                       = google_compute_network.datastats_network.id
   subnetwork_name                    = google_compute_subnetwork.datastats_subnetwork.id
   sa_roles                           = [ 
@@ -75,7 +75,7 @@ module "run_job_jobs_scrapper" {
   cloud_sql_instance_connection_name = [ google_sql_database_instance.datastats_sql.connection_name ]
   deletion_protection                = false
   egress                             = "ALL_TRAFFIC"
-  vpc_access_tags                    = [ "cloud-run" ]
+  vpc_access_tags                    = [ "internet-access" ]
   network_name                       = google_compute_network.datastats_network.id
   subnetwork_name                    = google_compute_subnetwork.datastats_subnetwork.id
   sa_roles                           = [ 
