@@ -156,7 +156,7 @@ main:
                 call: deleteRouterSecuredStep
                 args:
                   routerUrl: $${routerOperation.body.targetLink}
-              next: raiseError
+                next: raiseError
 
             - raiseError:
                 raise: $${e}
@@ -181,7 +181,7 @@ main:
                 call: deleteRouterSecuredStep
                 args:
                   routerUrl: $${routerOperation.body.targetLink}
-              next: raiseError
+                next: raiseError
 
             - raiseError:
                 raise: $${e}
