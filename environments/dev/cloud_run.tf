@@ -39,6 +39,8 @@ module "run_job_urls_scrapper" {
   vpc_access_tags                    = [ "internet-access" ]
   network_name                       = google_compute_network.datastats_network.id
   subnetwork_name                    = google_compute_subnetwork.datastats_subnetwork.id
+  cpu                                = 2
+  memory                             = "1Gi"
   sa_roles                           = [ 
     "roles/cloudsql.client", 
     "roles/secretmanager.secretAccessor",
@@ -78,6 +80,8 @@ module "run_job_jobs_scrapper" {
   vpc_access_tags                    = [ "internet-access" ]
   network_name                       = google_compute_network.datastats_network.id
   subnetwork_name                    = google_compute_subnetwork.datastats_subnetwork.id
+  cpu                                = 1
+  memory                             = "1Gi"
   sa_roles                           = [ 
     "roles/cloudsql.client", 
     "roles/secretmanager.secretAccessor",
