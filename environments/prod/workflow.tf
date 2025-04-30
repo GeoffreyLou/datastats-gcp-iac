@@ -128,27 +128,39 @@ main:
         next: iterateOnJobs
 
     - iterateOnJobs:
-        for:
-          value: jobExtracted
-          in: $${objectData.jobs_to_scrap}
-          steps:
-            - assign_var:
-                assign:
-                  - job: $${jobExtracted}
-                next: triggerCloudRunJob
+        try:
+          for:
+            value: jobExtracted
+            in: $${objectData.jobs_to_scrap}
+            steps:
+              - assign_var:
+                  assign:
+                    - job: $${jobExtracted}
+                  next: triggerCloudRunJob
 
-            - triggerCloudRunJob:
-                call: googleapis.run.v1.namespaces.jobs.run
+              - triggerCloudRunJob:
+                    call: googleapis.run.v1.namespaces.jobs.run
+                    args:
+                      name: $${"namespaces/" + projectId + "/jobs/" + urlsScrapperJobName}
+                      location: $${region}
+                      body:
+                        overrides:
+                          containerOverrides:
+                            env:
+                              - name: JOB_TO_SCRAP
+                                value: $${job}
+          next: waitForLastJob
+        except:
+          as e:
+          steps:
+            - securelyDeleteRouter:
+                call: deleteRouterSecuredStep
                 args:
-                  name: $${"namespaces/" + projectId + "/jobs/" + urlsScrapperJobName}
-                  location: $${region}
-                  body:
-                    overrides:
-                      containerOverrides:
-                        env:
-                          - name: JOB_TO_SCRAP
-                            value: $${job}
-        next: waitForLastJob
+                  routerUrl: $${routerOperation.body.targetLink}
+              next: raiseError
+
+            - raiseError:
+                raise: $${e}
 
     - waitForLastJob:
         call: sys.sleep
@@ -157,11 +169,23 @@ main:
         next: triggerJobsRunJob
 
     - triggerJobsRunJob:
-        call: googleapis.run.v1.namespaces.jobs.run
-        args:
-          name: $${"namespaces/" + projectId + "/jobs/" + jobsScrapperJobName}
-          location: $${region}
-        next: waitForJobsRunJob
+        try:
+          call: googleapis.run.v1.namespaces.jobs.run
+          args:
+            name: $${"namespaces/" + projectId + "/jobs/" + jobsScrapperJobName}
+            location: $${region}
+          next: waitForJobsRunJob
+        except:
+          as e:
+          steps:
+            - securelyDeleteRouter:
+                call: deleteRouterSecuredStep
+                args:
+                  routerUrl: $${routerOperation.body.targetLink}
+              next: raiseError
+
+            - raiseError:
+                raise: $${e}
 
     - waitForJobsRunJob:
         call: sys.sleep
@@ -170,9 +194,18 @@ main:
         next: deleteRouter
 
     - deleteRouter:
+        call: deleteRouterSecuredStep
+        args:
+          routerUrl: $${routerOperation.body.targetLink}
+
+
+deleteRouterSecuredStep:
+  params: [routerUrl]
+  steps:
+    - deleteRouterSecured:
         call: http.delete
         args:
-            url: $${routerOperation.body.targetLink}
+            url: $${routerUrl}
             auth:
               type: OAuth2
 
