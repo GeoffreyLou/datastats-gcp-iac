@@ -149,9 +149,8 @@ main:
                             env:
                               - name: JOB_TO_SCRAP
                                 value: $${job}
-          next: waitForLastJob
         except:
-          as e:
+          as: e
           steps:
             - securelyDeleteRouter:
                 call: deleteRouterSecuredStep
@@ -161,6 +160,7 @@ main:
 
             - raiseError:
                 raise: $${e}
+        next: waitForLastJob
 
     - waitForLastJob:
         call: sys.sleep
@@ -174,9 +174,8 @@ main:
           args:
             name: $${"namespaces/" + projectId + "/jobs/" + jobsScrapperJobName}
             location: $${region}
-          next: waitForJobsRunJob
         except:
-          as e:
+          as: e
           steps:
             - securelyDeleteRouter:
                 call: deleteRouterSecuredStep
@@ -186,6 +185,7 @@ main:
 
             - raiseError:
                 raise: $${e}
+        next: waitForJobsRunJob
 
     - waitForJobsRunJob:
         call: sys.sleep
