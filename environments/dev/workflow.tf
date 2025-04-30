@@ -156,9 +156,9 @@ main:
                 call: deleteRouterSecuredStep
                 args:
                   routerUrl: $${routerOperation.body.targetLink}
-                next: raiseError
+                next: raiseErrorJobUrls
 
-            - raiseError:
+            - raiseErrorJobUrls:
                 raise: $${e}
         next: waitForLastJob
 
@@ -181,9 +181,9 @@ main:
                 call: deleteRouterSecuredStep
                 args:
                   routerUrl: $${routerOperation.body.targetLink}
-                next: raiseError
+                next: raiseErrorJobJobs
 
-            - raiseError:
+            - raiseErrorJobJobs:
                 raise: $${e}
         next: waitForJobsRunJob
 
