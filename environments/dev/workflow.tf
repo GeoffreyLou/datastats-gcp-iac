@@ -152,7 +152,7 @@ main:
         except:
           as: e
           steps:
-            - securelyDeleteRouter:
+            - DeleteRouterErrorRunJobUrls:
                 call: deleteRouterSecuredStep
                 args:
                   routerUrl: $${routerOperation.body.targetLink}
@@ -177,7 +177,7 @@ main:
         except:
           as: e
           steps:
-            - securelyDeleteRouter:
+            - DeleteRouterErrorRunJobJobs:
                 call: deleteRouterSecuredStep
                 args:
                   routerUrl: $${routerOperation.body.targetLink}
