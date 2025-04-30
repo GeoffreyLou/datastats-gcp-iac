@@ -67,6 +67,7 @@ resource "google_compute_instance" "bastion" {
 cd /home
 curl -o cloud-sql-proxy https://storage.googleapis.com/cloud-sql-connectors/cloud-sql-proxy/v2.13.0/cloud-sql-proxy.linux.amd64
 chmod +x cloud-sql-proxy
+./cloud-sql-proxy ${google_sql_database_instance.datastats_sql.connection_name} --private-ip
 EOF
 
   metadata = {
