@@ -224,13 +224,13 @@ waitForResource:
             auth:
               type: OAuth2
           result: resourceStatus
-          next: GetCorrectStatusValue
         retry:
           predicate: $${http.default_retry_predicate}
           maxRetries: 5
           backoff:
             initial_delay: 10
             multiplier: 1
+        next: GetCorrectStatusValue
 
     - GetCorrectStatusValue:
         switch:
