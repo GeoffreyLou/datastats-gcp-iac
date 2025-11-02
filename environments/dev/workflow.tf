@@ -217,13 +217,20 @@ waitForResource:
           - startTime: $${sys.now()}
 
     - checkResource:
-        call: http.get
-        args:
-          url: $${resourceUrl}
-          auth:
-            type: OAuth2
-        result: resourceStatus
-        next: GetCorrectStatusValue
+        try:
+          call: http.get
+          args:
+            url: $${resourceUrl}
+            auth:
+              type: OAuth2
+          result: resourceStatus
+          next: GetCorrectStatusValue
+        retry:
+          predicate: $${http.default_retry_predicate}
+          maxRetries: 5
+          backoff:
+            initial_delay: 10
+            multiplier: 1
 
     - GetCorrectStatusValue:
         switch:
