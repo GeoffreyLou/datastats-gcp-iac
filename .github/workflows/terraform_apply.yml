@@ -52,7 +52,7 @@ jobs:
 
       - name: Get backend secret
         id: get_backend_secret
-        uses: 'google-github-actions/get-secretmanager-secrets@v2'
+        uses: 'google-github-actions/get-secretmanager-secrets@v3'
         with:
           secrets: |-
             backend_secret:${{ env.GCP_PROJECT_ID }}/${{ env.GCP_BACKEND_SECRET }}
@@ -62,7 +62,7 @@ jobs:
 
       - name: Get tfvars secret
         id: get_tfvars_secret
-        uses: 'google-github-actions/get-secretmanager-secrets@v2'
+        uses: 'google-github-actions/get-secretmanager-secrets@v3'
         with:
           secrets: |-
             tfvars_secret:${{ env.GCP_PROJECT_ID }}/${{ env.GCP_TFVARS_SECRET }}
