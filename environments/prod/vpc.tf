@@ -18,88 +18,88 @@
 # 🟢 Network & subnetwork
 # ----------------------------------------------------------------------------------------------------------------------
 
-resource "google_compute_network" "datastats_network" {
-  project                 = var.project_id
-  name                    = "${var.project_name}-network"
-  auto_create_subnetworks = false
-}
+# resource "google_compute_network" "datastats_network" {
+#   project                 = var.project_id
+#   name                    = "${var.project_name}-network"
+#   auto_create_subnetworks = false
+# }
 
-resource "google_compute_subnetwork" "datastats_subnetwork" {
-  name                     = "${var.project_name}-backend-subnet"
-  ip_cidr_range            = "172.16.0.0/12"
-  region                   = var.region
-  project                  = var.project_id
-  network                  = google_compute_network.datastats_network.id
-  private_ip_google_access = true
-}
+# resource "google_compute_subnetwork" "datastats_subnetwork" {
+#   name                     = "${var.project_name}-backend-subnet"
+#   ip_cidr_range            = "172.16.0.0/12"
+#   region                   = var.region
+#   project                  = var.project_id
+#   network                  = google_compute_network.datastats_network.id
+#   private_ip_google_access = true
+# }
 
 
 # ----------------------------------------------------------------------------------------------------------------------
 # 🟢 Firewall rules
 # ----------------------------------------------------------------------------------------------------------------------
 
-resource "google_compute_firewall" "allow_internet_access" {
-  name        = "${var.project_name}-allow-internet-access"
-  network     = google_compute_network.datastats_network.name
-  description = "Allow outbound internet access "
+# resource "google_compute_firewall" "allow_internet_access" {
+#   name        = "${var.project_name}-allow-internet-access"
+#   network     = google_compute_network.datastats_network.name
+#   description = "Allow outbound internet access "
 
-  direction = "EGRESS"
-  allow {
-    protocol = "all"
-  }
+#   direction = "EGRESS"
+#   allow {
+#     protocol = "all"
+#   }
 
-  destination_ranges = ["0.0.0.0/0"] 
-  priority           = 1000
-  target_tags        = ["internet-access"]
-}
+#   destination_ranges = ["0.0.0.0/0"] 
+#   priority           = 1000
+#   target_tags        = ["internet-access"]
+# }
 
-resource "google_compute_firewall" "deny_all_egress" {
-  name    = "${var.project_name}-deny-all-egress"
-  network = google_compute_network.datastats_network.name
-  direction = "EGRESS"
-  priority  = 2000
-  deny {
-    protocol = "all"
-  }
-  destination_ranges = ["0.0.0.0/0"]
-}
+# resource "google_compute_firewall" "deny_all_egress" {
+#   name    = "${var.project_name}-deny-all-egress"
+#   network = google_compute_network.datastats_network.name
+#   direction = "EGRESS"
+#   priority  = 2000
+#   deny {
+#     protocol = "all"
+#   }
+#   destination_ranges = ["0.0.0.0/0"]
+# }
 
-resource "google_compute_firewall" "deny_all_inbound" {
-  name        = "${var.project_name}-deny-all-inbound"
-  network     = google_compute_network.datastats_network.name
-  description = "Deny all inbound traffic to the network"
+# resource "google_compute_firewall" "deny_all_inbound" {
+#   name        = "${var.project_name}-deny-all-inbound"
+#   network     = google_compute_network.datastats_network.name
+#   description = "Deny all inbound traffic to the network"
 
-  direction = "INGRESS"
-  deny {
-    protocol = "all"
-  }
+#   direction = "INGRESS"
+#   deny {
+#     protocol = "all"
+#   }
 
-  source_ranges = ["0.0.0.0/0"] 
-  priority      = 1000
-}
+#   source_ranges = ["0.0.0.0/0"] 
+#   priority      = 1000
+# }
 
 
 # ----------------------------------------------------------------------------------------------------------------------
 # 🟢 Cloud SQL Private IP
 # ----------------------------------------------------------------------------------------------------------------------
 
-resource "google_compute_global_address" "peering_ip" {
-  project       = var.project_id
-  name          = "${var.project_name}-peering-ip"
-  prefix_length = 16
-  address_type  = "INTERNAL"
-  purpose       = "VPC_PEERING"
-  network       = google_compute_network.datastats_network.id
-  labels        = { env = var.env }
-} 
+# resource "google_compute_global_address" "peering_ip" {
+#   project       = var.project_id
+#   name          = "${var.project_name}-peering-ip"
+#   prefix_length = 16
+#   address_type  = "INTERNAL"
+#   purpose       = "VPC_PEERING"
+#   network       = google_compute_network.datastats_network.id
+#   labels        = { env = var.env }
+# } 
 
 
 # ----------------------------------------------------------------------------------------------------------------------
 # 🟢 VPC peering
 # ----------------------------------------------------------------------------------------------------------------------
 
-resource "google_service_networking_connection" "private_vpc_connection" {
-  network                 = google_compute_network.datastats_network.id
-  service                 = "servicenetworking.googleapis.com"
-  reserved_peering_ranges = [google_compute_global_address.peering_ip.name]
-}
+# resource "google_service_networking_connection" "private_vpc_connection" {
+#   network                 = google_compute_network.datastats_network.id
+#   service                 = "servicenetworking.googleapis.com"
+#   reserved_peering_ranges = [google_compute_global_address.peering_ip.name]
+# }
