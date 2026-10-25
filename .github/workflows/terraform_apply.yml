@@ -42,7 +42,7 @@ jobs:
           service_account: ${{ env.GCP_CI_CD_SERVICE_ACCOUNT }}
 
       - name: Setup Terraform
-        uses: hashicorp/setup-terraform@v3
+        uses: hashicorp/setup-terraform@v4
         with:
           terraform_version: ${{ env.TERRAFORM_VERSION }}
 
