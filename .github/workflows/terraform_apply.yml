@@ -72,7 +72,7 @@ jobs:
 
       - name: Docker Auth
         id: docker_auth
-        uses: 'docker/login-action@v3'
+        uses: 'docker/login-action@v4'
         with: 
           username: 'oauth2accesstoken'
           password: '${{ steps.get_gcp_access_token.outputs.access_token }}'
